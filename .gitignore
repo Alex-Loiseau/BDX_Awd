@@ -15,4 +15,4 @@ sim.npy
 motions/
 stuff
 tmp
-awd/data/motions/*
+awd/data/motions/walking/*

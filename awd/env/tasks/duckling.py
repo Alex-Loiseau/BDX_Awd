@@ -538,7 +538,7 @@ class Duckling(BaseTask):
                     dof_prop['damping'][i] = self._damping[dof_name]
                 else:
                     print(f"WARNING: No damping values for {dof_name}")
-                if dof_name in self._friction:
+                if dof_name in self._friction:                    
                     dof_prop['friction'][i] = self._friction[dof_name]
                 if dof_name in self._armature:
                     dof_prop['armature'][i] = self._armature[dof_name]
