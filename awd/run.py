@@ -294,53 +294,6 @@ def main():
     runner.load(cfg_train)
     runner.reset()
 
-    if cfg["env"]["export_onnx"]:
-        # https://www.tylerbarkin.com/isaac-gym-to-onnx
-        class ModelWrapper(torch.nn.Module):
-            def __init__(self, model, running_mean_std):
-                torch.nn.Module.__init__(self)
-                self._model = model
-                self.running_mean_std = running_mean_std
-
-            def forward(self, input_dict):
-                input_dict["obs"] = self.running_mean_std(input_dict["obs"])
-
-                x = self._model.a2c_network.actor_mlp(input_dict["obs"])
-                x = self._model.a2c_network.mu(x)
-                return x
-
-        player = runner.create_player()
-        player.restore(cfg["args"].checkpoint)
-
-        inputs = {
-            "obs": torch.zeros((1,) + player.obs_shape).to(player.device),
-        }
-
-        with torch.no_grad():
-            adapter = flatten.TracingAdapter(
-                ModelWrapper(player.model, player.running_mean_std),
-                inputs,
-                allow_non_tensor=True,
-            )
-            traced = torch.jit.trace(
-                adapter, adapter.flattened_inputs, check_trace=False
-            )
-            flattened_outputs = traced(*adapter.flattened_inputs)
-            print(flattened_outputs)
-
-        # torch.jit.save(traced, "TEST.pt")
-        # print("SAVE TO TEST.pt")
-        torch.onnx.export(
-            traced,
-            *adapter.flattened_inputs,
-            "ONNX.onnx",
-            verbose=True,
-            input_names=["obs"],
-            output_names=["actions"],
-        )
-        print("SAVE TO ONNX.onnx")
-        exit()
-
     runner.run(vargs)
     return
 
