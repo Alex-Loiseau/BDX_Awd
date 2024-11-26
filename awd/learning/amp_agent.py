@@ -162,6 +162,112 @@ class AMPAgent(common_agent.CommonAgent):
         for k, v in amp_rewards.items():
             batch_dict[k] = a2c_common.swap_and_flatten01(v)
 
+        episode_rewards = infos.get("episode", None)
+        if episode_rewards:
+            batch_dict["episode"] = {}
+            for key in episode_rewards.keys():
+                batch_dict["episode"][key] = episode_rewards[key]
+
+        return batch_dict
+    
+    def play_steps_rnn(self):
+        self.set_eval()
+
+        mb_rnn_states = []
+        epinfos = []
+        done_indices = []
+        update_list = self.update_list
+
+        # Initializing values for RNN steps
+        batch_size = self.num_agents * self.num_actors
+        mb_rnn_masks = None
+        mb_rnn_masks, indices, steps_mask, steps_state, play_mask, mb_rnn_states = self.init_rnn_step(batch_size, mb_rnn_states)
+
+        for n in range(self.horizon_length):
+
+            seq_indices, full_tensor = self.process_rnn_indices(mb_rnn_masks, indices, steps_mask, steps_state, mb_rnn_states)
+            if full_tensor:
+                break
+
+            self.obs = self.env_reset(done_indices)
+            self.experience_buffer.update_data_rnn('obses', indices, play_mask, self.obs['obs'])
+
+            if self.use_action_masks:
+                masks = self.vec_env.get_action_masks()
+                res_dict = self.get_masked_action_values(self.obs, masks)
+            else:
+                res_dict = self.get_action_values(self.obs, self._rand_action_probs)
+
+            # Store RNN states for future timesteps
+            self.rnn_states = res_dict['rnn_states']
+
+            for k in update_list:
+                self.experience_buffer.update_data_rnn(k, indices, play_mask, res_dict[k])
+
+            if self.has_central_value:
+                self.experience_buffer.update_data_rnn('states', indices[::self.num_agents], play_mask[::self.num_agents]//self.num_agents, self.obs['states'])
+
+            # Step in the environment
+            self.obs, rewards, self.dones, infos = self.env_step(res_dict['actions'])
+            shaped_rewards = self.rewards_shaper(rewards)
+
+            self.experience_buffer.update_data_rnn('rewards', indices, play_mask, shaped_rewards)
+            self.experience_buffer.update_data_rnn('next_obses', indices, play_mask, self.obs['obs'])
+            self.experience_buffer.update_data_rnn('dones', indices, play_mask, self.dones.byte())
+            self.experience_buffer.update_data_rnn('amp_obs', indices, play_mask, infos['amp_obs'])
+            self.experience_buffer.update_data_rnn('rand_action_mask', indices, play_mask, res_dict['rand_action_mask'])
+
+            terminated = infos['terminate'].float().unsqueeze(-1)
+            next_vals = self._eval_critic(self.obs)
+            next_vals *= (1.0 - terminated)
+            self.experience_buffer.update_data_rnn('next_values', indices, play_mask, next_vals)
+
+            self.current_rewards += rewards
+            self.current_lengths += 1
+            all_done_indices = self.dones.nonzero(as_tuple=False)
+            done_indices = all_done_indices[::self.num_agents]
+
+            self.process_rnn_dones(all_done_indices, indices, seq_indices)
+
+            if self.has_central_value:
+                self.central_value_net.post_step_rnn(all_done_indices)
+
+            self.game_rewards.update(self.current_rewards[done_indices])
+            self.game_lengths.update(self.current_lengths[done_indices])
+            not_dones = 1.0 - self.dones.float()
+
+            self.current_rewards = self.current_rewards * not_dones.unsqueeze(1)
+            self.current_lengths = self.current_lengths * not_dones
+
+            if self.vec_env.env.task.viewer:
+                self._amp_debug(infos)
+
+            done_indices = done_indices[:, 0]
+
+        # Calculate returns and advantages
+        mb_fdones = self.experience_buffer.tensor_dict['dones'].float()
+        mb_values = self.experience_buffer.tensor_dict['values']
+        mb_next_values = self.experience_buffer.tensor_dict['next_values']
+        mb_rewards = self.experience_buffer.tensor_dict['rewards']
+        mb_amp_obs = self.experience_buffer.tensor_dict['amp_obs']
+
+        # AMP specific reward calculation
+        amp_rewards = self._calc_amp_rewards(mb_amp_obs)
+        mb_rewards = self._combine_rewards(mb_rewards, amp_rewards)
+
+        mb_advs = self.discount_values(mb_fdones, mb_values, mb_rewards, mb_next_values)
+        mb_returns = mb_advs + mb_values
+
+        # Prepare the final batch dictionary
+        batch_dict = self.experience_buffer.get_transformed_list(a2c_common.swap_and_flatten01, self.tensor_list)
+        batch_dict['returns'] = a2c_common.swap_and_flatten01(mb_returns)
+        batch_dict['rnn_states'] = mb_rnn_states
+        batch_dict['rnn_masks'] = mb_rnn_masks
+        batch_dict['played_frames'] = self.batch_size
+
+        for k, v in amp_rewards.items():
+            batch_dict[k] = a2c_common.swap_and_flatten01(v)
+
         return batch_dict
     
     def get_action_values(self, obs_dict, rand_action_probs):
@@ -625,6 +731,8 @@ class AMPAgent(common_agent.CommonAgent):
     def _record_train_batch_info(self, batch_dict, train_info):
         super()._record_train_batch_info(batch_dict, train_info)
         train_info['disc_rewards'] = batch_dict['disc_rewards']
+        if batch_dict.get("episode", None):
+            train_info["episode"] = batch_dict["episode"]
         return
 
     def _log_train_info(self, train_info, frame):
@@ -638,6 +746,11 @@ class AMPAgent(common_agent.CommonAgent):
         self.writer.add_scalar('info/disc_demo_logit', torch_ext.mean_list(train_info['disc_demo_logit']).item(), frame)
         self.writer.add_scalar('info/disc_grad_penalty', torch_ext.mean_list(train_info['disc_grad_penalty']).item(), frame)
         self.writer.add_scalar('info/disc_logit_loss', torch_ext.mean_list(train_info['disc_logit_loss']).item(), frame)
+
+        episode_rewards = train_info.get("episode", None)
+        if episode_rewards:
+            for key in episode_rewards.keys():
+                self.writer.add_scalar(f'info/{key}', episode_rewards[key], frame)
 
         disc_reward_std, disc_reward_mean = torch.std_mean(train_info['disc_rewards'])
         self.writer.add_scalar('info/disc_reward_mean', disc_reward_mean.item(), frame)
