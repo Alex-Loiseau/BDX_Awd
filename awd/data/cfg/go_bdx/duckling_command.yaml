@@ -52,7 +52,7 @@ env:
     torqueRewardScale: -0.001
     feetAirTimeRewardScale: 0.05
     actionRateRewardScale: -0.005
-    standStillRewardScale: 0.1
+    standStillRewardScale: 0.0
 
     # normalization
     linearVelocityScale: [1.0, 1.0]
