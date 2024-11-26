@@ -325,7 +325,7 @@ class DucklingAMP(Duckling):
 @torch.jit.script
 def build_amp_observations(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos,
                            local_root_obs, root_height_obs):
-    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool) -> Tensor
+    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool) -> Tensor
     root_h = root_pos[:, 2:3]
     heading_rot = torch_utils.calc_heading_quat_inv(root_rot)
 
