@@ -2,9 +2,8 @@ import torch
 
 import env.tasks.duckling_amp_task as duckling_amp_task
 from isaacgym.torch_utils import *
+import pygame
 
-TAR_ACTOR_ID = 1
-TAR_FACING_ACTOR_ID = 2
 
 class DucklingCommand(duckling_amp_task.DucklingAMPTask):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
@@ -69,6 +68,13 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         self.commands_yaw = self.commands.view(self.num_envs, 3)[..., 2]
         self.commands_scale = torch.tensor([self.lin_vel_scale[0], self.lin_vel_scale[1], self.ang_vel_scale], requires_grad=False, device=self.commands.device)
         self.default_dof_pos = torch.zeros_like(self.dof_pos, dtype=torch.float, device=self.device, requires_grad=False)
+
+        self._keyboard_input = self.cfg["env"]["keyboard_input"]
+        if self._keyboard_input:
+            pygame.init()
+            # open a blank pygame window
+            self._screen = pygame.display.set_mode((100, 100))
+            pygame.display.set_caption("Press arrow keys to move robot")
         
         return
 
@@ -96,6 +102,31 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         rest_env_ids = reset_task_mask.nonzero(as_tuple=False).flatten()
         if len(rest_env_ids) > 0:
             self._reset_task(rest_env_ids)
+
+        if self._keyboard_input:
+            keys = pygame.key.get_pressed()
+            lin_vel_x = 0
+            lin_vel_y = 0
+            ang_vel = 0
+            if keys[pygame.K_z]:
+                lin_vel_x = torch.tensor(self.command_x_range[1])
+            if keys[pygame.K_s]:
+                lin_vel_x = torch.tensor(self.command_x_range[0])
+            if keys[pygame.K_d]:
+                lin_vel_y = torch.tensor(self.command_y_range[0])
+            if keys[pygame.K_q]:
+                lin_vel_y = torch.tensor(self.command_y_range[1])
+            if keys[pygame.K_a]:
+                ang_vel = torch.tensor(self.command_yaw_range[1])
+            if keys[pygame.K_e]:
+                ang_vel = torch.tensor(self.command_yaw_range[0])
+
+            self.commands_x[:] = lin_vel_x
+            self.commands_y[:] = lin_vel_y
+            self.commands_yaw[:] = ang_vel
+            print(self.commands_x[0], self.commands_y[0], self.commands_yaw[0])
+            pygame.event.pump()  # process event queue
+            
         return
 
     def _reset_task(self, env_ids):
