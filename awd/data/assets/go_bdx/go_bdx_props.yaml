@@ -30,7 +30,7 @@ num_actions: 16
 motor_efforts:
   [100, 100, 100, 100, 100, 50, 50, 50, 50, 10, 10, 100, 100, 100, 100, 100]
 #13 + dof_obs_size + 28 + 3 * num_key_bodies # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
-num_amp_obs_per_step: 131
+num_amp_obs_per_step: 51
 
 friction: 0.0
 angular_damping: 0.0

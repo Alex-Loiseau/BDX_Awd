@@ -12,6 +12,16 @@ env:
   stateInit: "Hybrid"
   hybridInitProb: 0.5
   numAMPObsSteps: 15
+
+  pushRobots: False
+  pushIntervalS: 2 #s
+  maxPushVelXy: 0.3
+
+  # COM is randomized only once for each actor, but not at each reset
+  randomizeCom: False
+  comRange: [-0.1, 0.1]
+  randomizeTorques: False
+  torqueMultiplierRange: [0.85, 1.15]
   
   localRootObs: True
   keyBodies: ["left_foot", "right_foot"]
