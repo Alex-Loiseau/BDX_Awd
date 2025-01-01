@@ -47,6 +47,7 @@ parser.add_argument("--walk_max_dx_forward", type=float, default=None)
 parser.add_argument("--walk_max_dx_backward", type=float, default=None)
 parser.add_argument("-l", "--length", type=int, default=10)
 parser.add_argument("--mini", action="store_true", default=False)
+parser.add_argument("--mini_v2", action="store_true", default=False)
 args = parser.parse_args()
 
 app = Flask(__name__)
@@ -86,6 +87,10 @@ class GaitParameters:
             self.robot = "mini_bdx"
             self.robot_urdf = "urdf/bdx.urdf"
             self.asset_path = "../awd/data/assets/mini_bdx"
+        elif args.mini_v2:
+            self.robot = "open_duck_mini_v2"
+            self.robot_urdf = "robot.urdf"
+            self.asset_path = "../awd/data/assets/open_duck_mini_v2"
         else:
             self.robot = "go_bdx"
             self.robot_urdf = "go_bdx.urdf"

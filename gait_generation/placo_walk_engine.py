@@ -42,8 +42,12 @@ class PlacoWalkEngine:
         self.solver.enable_joint_limits(False)
         self.solver.dt = DT / REFINE
 
-        self.robot.set_joint_limits("left_knee", -2, -0.01)
-        self.robot.set_joint_limits("right_knee", -2, -0.01)
+        # self.robot.set_joint_limits("left_knee", -2, -0.01)
+        # self.robot.set_joint_limits("right_knee", -2, -0.01)
+
+        # for mini_v2
+        self.robot.set_joint_limits("left_knee", 2, 0.01)
+        self.robot.set_joint_limits("right_knee", 2, 0.01)
 
         # Creating the walk QP tasks
         self.tasks = placo.WalkTasks()

@@ -71,8 +71,13 @@ for i, frame in enumerate(frames):
         vels["joint_vels"].append(frame[34:49])
         root_z.append(R.from_matrix(pose[:3, :3]).as_euler("xyz")[2])
 
-        left_toe_pos = frame[22:25]
-        right_toe_pos = frame[25:28]
+        # for mini v2 (doesn't have antennas yet)
+        left_toe_pos = frame[20:23]
+        right_toe_pos = frame[23:26]
+
+        # for ogher 
+        # left_toe_pos = frame[22:25]
+        # right_toe_pos = frame[25:28]
         fv.pushFrame(fv_utils.make_pose(left_toe_pos, [0, 0, 0]), "left_toe")
         fv.pushFrame(fv_utils.make_pose(right_toe_pos, [0, 0, 0]), "right_toe")
 

@@ -120,7 +120,7 @@ def record(pwe, args_dict):
             else:
                 T_world_fbase = pwe.robot.get_T_world_fbase()
             root_position = list(T_world_fbase[:3, 3])
-            if not args_dict["mini"]:
+            if not args_dict["mini"] and not args_dict["mini_v2"]:
                 root_position[2] = round(root_position[2], 1)
 
             # if center_y_pos is None:
@@ -128,7 +128,7 @@ def record(pwe, args_dict):
 
             # Why ?
             # Commented this for mini bdx as it shifted the trunk frame
-            if not args_dict["mini"]:
+            if not args_dict["mini"] and not args_dict["mini_v2"]:
                 root_position[1] = root_position[1] - center_y_pos
 
             if round(root_position[2], 5) < 0:
@@ -362,6 +362,7 @@ if __name__ == "__main__":
         "-n", "--num_recordings", type=int, default=10, help="Number recordings"
     )
     parser.add_argument("--mini", action="store_true", default=False)
+    parser.add_argument("--mini_v2", action="store_true", default=False)
     parser.add_argument("--preset", type=str, default="")
     parser.add_argument("--min_dx", type=float, default=-0.03)
     parser.add_argument("--max_dx", type=float, default=0.03)
@@ -380,6 +381,10 @@ if __name__ == "__main__":
         robot = "mini_bdx"
         robot_urdf = "urdf/bdx.urdf"
         asset_path = "../awd/data/assets/mini_bdx"
+    elif args.mini_v2:
+        robot = "open_duck_mini_v2"
+        robot_urdf = "robot.urdf"
+        asset_path = "../awd/data/assets/open_duck_mini_v2"
     else:
         robot = "go_bdx"
         robot_urdf = "go_bdx.urdf"
@@ -410,6 +415,7 @@ if __name__ == "__main__":
     args_dict["output_dir"] = args.output_dir
     args_dict["debug"] = True
     args_dict["mini"] = args.mini
+    args_dict["mini_v2"] = args.mini_v2
     args_dict["period"] = pwe.period
 
     for i in range(args.num_recordings):
