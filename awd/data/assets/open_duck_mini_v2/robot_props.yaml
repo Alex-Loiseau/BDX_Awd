@@ -36,9 +36,9 @@ motor_efforts: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 #13 + dof_obs_size + 28 + 3 * num_key_bodies # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
 num_amp_obs_per_step: 110
 
-friction: 0.001
+friction: 0.1
 angular_damping: 0.0
-armature: 0.0012
+armature: 0.004
 thickness: 0.001
 
 # friction: 0.19
@@ -47,8 +47,8 @@ thickness: 0.001
 # thickness: 0.001
 
 # used for custom pd control
-p_gains: 10
-d_gains: 0.1
+p_gains: 5
+d_gains: 0.2
 max_effort: 2
 max_velocity: 4.7
 
