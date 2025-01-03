@@ -342,6 +342,7 @@ def record(pwe, args_dict):
         "walk_max_dy": pwe.parameters.walk_max_dy,
         "walk_max_dx_forward": pwe.parameters.walk_max_dx_forward,
         "walk_max_dx_backward": pwe.parameters.walk_max_dx_backward,
+        "period": args_dict["period"],
     }
 
     file_name = args_dict["name"] + str(".json")

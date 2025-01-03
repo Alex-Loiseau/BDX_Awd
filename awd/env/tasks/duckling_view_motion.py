@@ -39,8 +39,8 @@ class DucklingViewMotion(DucklingAMP):
         control_freq_inv = cfg["env"]["controlFrequencyInv"]
         self._motion_dt = control_freq_inv * sim_params.dt
 
-        #cfg["env"]["controlFrequencyInv"] = 1
-        cfg["env"]["pdControl"] = False
+        cfg["env"]["controlFrequencyInv"] = 1
+        cfg["env"]["pdControl"] = "isaac"
 
         super().__init__(cfg=cfg,
                          sim_params=sim_params,
@@ -48,7 +48,7 @@ class DucklingViewMotion(DucklingAMP):
                          device_type=device_type,
                          device_id=device_id,
                          headless=headless)
-        
+
         num_motions = self._motion_lib.num_motions()
         self._motion_ids = torch.arange(self.num_envs, device=self.device, dtype=torch.long)
         self._motion_ids = torch.remainder(self._motion_ids, num_motions)
@@ -69,7 +69,7 @@ class DucklingViewMotion(DucklingAMP):
         super().post_physics_step()
         self._motion_sync()
         return
-    
+
     def _get_duckling_collision_filter(self):
         return 1 # disable self collisions
 
@@ -80,10 +80,10 @@ class DucklingViewMotion(DucklingAMP):
 
         root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos \
            = self._motion_lib.get_motion_state(motion_ids, motion_times)
-        
+
         self.accumulated_key_pos_anim.append(key_pos.detach().cpu().numpy())
         self.accumulated_key_pos_sim.append(self._rigid_body_pos[:, self._key_body_ids, :].detach().cpu().numpy())
-        
+
         # root_vel = torch.zeros_like(root_vel)
         # root_ang_vel = torch.zeros_like(root_ang_vel)
         # dof_vel = torch.zeros_like(dof_vel)
@@ -97,12 +97,12 @@ class DucklingViewMotion(DucklingAMP):
         # print(torch.isnan(dof_vel).sum(), "### dof_vel")
         # print(torch.isnan(root_ang_vel).sum(), "### root_ang_vel")
 
-        self._set_env_state(env_ids=env_ids, 
-                            root_pos=root_pos, 
-                            root_rot=root_rot, 
-                            dof_pos=dof_pos, 
-                            root_vel=root_vel, 
-                            root_ang_vel=root_ang_vel, 
+        self._set_env_state(env_ids=env_ids,
+                            root_pos=root_pos,
+                            root_rot=root_rot,
+                            dof_pos=dof_pos,
+                            root_vel=root_vel,
+                            root_ang_vel=root_ang_vel,
                             dof_vel=dof_vel)
 
         env_ids_int32 = self._duckling_actor_ids[env_ids]
@@ -132,7 +132,7 @@ class DucklingViewMotion(DucklingAMP):
     def _reset_env_tensors(self, env_ids):
         num_motions = self._motion_lib.num_motions()
         self._motion_ids[env_ids] = torch.remainder(self._motion_ids[env_ids] + self.num_envs, num_motions)
-        
+
         self.progress_buf[env_ids] = 0
         self.reset_buf[env_ids] = 0
         self._terminate_buf[env_ids] = 0

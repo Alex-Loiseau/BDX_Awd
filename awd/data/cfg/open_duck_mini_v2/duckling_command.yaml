@@ -13,6 +13,7 @@ env:
   pdControl: "custom" # isaac or custom
   powerScale: 1.0
   controlFrequencyInv: 2 # 30 Hz
+  # controlFrequencyInv: 1 # 60 Hz (?)
   stateInit: "Hybrid"
   hybridInitProb: 0.0 # 0.0
   numAMPObsSteps: 10
@@ -30,7 +31,7 @@ env:
   localRootObs: True
   keyBodies: ["left_foot", "right_foot"]
   contactBodies: ["left_foot", "right_foot"]
-  terminationHeight: 0.02
+  terminationHeight: 0.032
   headTerminationHeight: 0.2
   initHeight: 0.23
   initQuat: [0, 0.08, 0, 1]
@@ -74,7 +75,7 @@ env:
     linearVelocityXYRewardScale: 0.5
     angularVelocityZRewardScale: 0.25
     torqueRewardScale: -0.000025
-    actionRateRewardScale: -1.0
+    actionRateRewardScale: -0.1
     standStillRewardScale: 0.0
 
     # normalization
