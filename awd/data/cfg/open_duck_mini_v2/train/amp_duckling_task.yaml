@@ -92,5 +92,5 @@ params:
     normalize_amp_input: True
     enable_eps_greedy: False
 
-    task_reward_w: 0.4
-    disc_reward_w: 0.6
+    task_reward_w: 0.0
+    disc_reward_w: 1.0

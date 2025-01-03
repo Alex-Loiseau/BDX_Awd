@@ -498,7 +498,7 @@ class Duckling(BaseTask):
         # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 3 effort)
         asset_options.default_dof_drive_mode = 0
 
-        asset_options.fix_base_link = False # TODO
+        # asset_options.fix_base_link = True # TODO
 
         motor_efforts = None
         duckling_asset = self.gym.load_asset(
@@ -816,7 +816,7 @@ class Duckling(BaseTask):
 
         # _, _, motion_dof_pos, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device)) # TODO
 
-        # actions[:, :] = motion_dof_pos
+        # actions[:, :] = motion_dof_pos - self._default_dof_pos
 
         # if self.cfg["env"]["debugSaveObs"]:
         #     self.saved_actions = []
