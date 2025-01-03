@@ -75,7 +75,7 @@ env:
     linearVelocityXYRewardScale: 0.5
     angularVelocityZRewardScale: 0.25
     torqueRewardScale: -0.000025
-    actionRateRewardScale: -0.1
+    actionRateRewardScale: -1.0
     standStillRewardScale: 0.0
 
     # normalization
@@ -83,14 +83,15 @@ env:
     angularVelocityScale: 0.25
     useAverageVelocities: True
 
+  randomCommandVelocityRanges:
+    linear_x: [0.13, 0.13] # min max [m/s]
+    linear_y: [0.0, 0.0] # min max [m/s]
+    yaw: [0.0, 0.0] # min max [rad/s]
+
   # randomCommandVelocityRanges:
   #   linear_x: [-0.13, 0.13] # min max [m/s]
   #   linear_y: [-0.1, 0.1] # min max [m/s]
   #   yaw: [-0.5, 0.5] # min max [rad/s]
-  randomCommandVelocityRanges:
-    linear_x: [-0.13, 0.13] # min max [m/s]
-    linear_y: [-0.1, 0.1] # min max [m/s]
-    yaw: [-0.5, 0.5] # min max [rad/s]
 
 sim:
   substeps: 2
