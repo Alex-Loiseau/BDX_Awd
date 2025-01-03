@@ -1,6 +1,6 @@
 joints:
   - left_hip_yaw
-    - left_hip_roll
+  - left_hip_roll
   - left_hip_pitch
   - left_knee
   - left_ankle
@@ -36,21 +36,26 @@ motor_efforts: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 #13 + dof_obs_size + 28 + 3 * num_key_bodies # [root_h, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos]
 num_amp_obs_per_step: 110
 
-# 15 + dof_obs_size + 28 + 3 * 7 ?
-# num_amp_obs_per_step: 154
-friction: 0.19
+friction: 0.001
 angular_damping: 0.0
-armature: 0.012
+armature: 0.0012
 thickness: 0.001
 
-# TODO make lists to differentiate motors ?
+# friction: 0.19
+# angular_damping: 0.0
+# armature: 0.012
+# thickness: 0.001
+
 # used for custom pd control
-p_gains: 19.6
-d_gains: 1.44
-# p_gains: 1.25
-# d_gains: 0.0475
-max_effort: 3.69
+p_gains: 10
+d_gains: 0.1
+max_effort: 2
 max_velocity: 4.7
+
+# p_gains: 19.6
+# d_gains: 1.44
+# max_effort: 3.69
+# max_velocity: 4.7
 
 # Used for isaac pd control
 damping:

@@ -88,6 +88,8 @@ class Duckling(BaseTask):
         self.common_step_counter = 0
         self.push_interval = np.ceil(self.cfg["env"]["pushIntervalS"] / self.dt)
 
+        self.common_t = 0
+
         # get gym GPU state tensors
         # self.gym.refresh_actor_root_state_tensor(self.sim)
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
@@ -495,7 +497,9 @@ class Duckling(BaseTask):
         asset_options.max_linear_velocity = 100.0
         # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 3 effort)
         asset_options.default_dof_drive_mode = 0
-        # asset_options.fix_base_link = True
+
+        asset_options.fix_base_link = False # TODO
+
         motor_efforts = None
         duckling_asset = self.gym.load_asset(
             self.sim, asset_root, asset_file, asset_options
@@ -809,6 +813,11 @@ class Duckling(BaseTask):
         #     device=self.device,
         #     requires_grad=False,
         # )
+
+        # _, _, motion_dof_pos, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device)) # TODO
+
+        # actions[:, :] = motion_dof_pos
+
         # if self.cfg["env"]["debugSaveObs"]:
         #     self.saved_actions = []
 
@@ -866,6 +875,7 @@ class Duckling(BaseTask):
     def post_physics_step(self):
         self.progress_buf += 1
         self.common_step_counter += 1
+        self.common_t += self.dt
 
         self.projected_gravity[:] = quat_rotate_inverse(
             self._root_states[: self.num_envs, 3:7], self.gravity_vec
