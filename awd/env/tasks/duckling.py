@@ -68,7 +68,7 @@ class Duckling(BaseTask):
         self._root_height_obs = self.cfg["env"].get("rootHeightObs", True)
         self._randomize_mask_joints = self.cfg["env"].get("randomizeMaskJoints", False)
         self._enable_early_termination = self.cfg["env"]["enableEarlyTermination"]
-        
+
         key_bodies = self.cfg["env"]["keyBodies"]
         contact_bodies = self.cfg["env"]["contactBodies"]
         mask_joints = self.cfg["env"].get("maskJoints", [])
@@ -81,13 +81,13 @@ class Duckling(BaseTask):
         self.cfg["device_type"] = device_type
         self.cfg["device_id"] = device_id
         self.cfg["headless"] = headless
-        
+
         self.randomize_com = self.cfg["env"].get("randomizeCom", False)
         self.com_randomize_range = self.cfg["env"].get("comRandomizeRange", [-0.1, 0.1])
         super().__init__(cfg=self.cfg)
-        
-        self.dt = self.control_freq_inv * sim_params.dt        
-        
+
+        self.dt = self.control_freq_inv * sim_params.dt
+
         # get gym GPU state tensors
         #self.gym.refresh_actor_root_state_tensor(self.sim)
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
@@ -101,7 +101,7 @@ class Duckling(BaseTask):
 
         dof_force_tensor = self.gym.acquire_dof_force_tensor(self.sim)
         self.dof_force_tensor = gymtorch.wrap_tensor(dof_force_tensor).view(self.num_envs, self.num_dof)
-        
+
         self.gym.refresh_dof_state_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_rigid_body_state_tensor(self.sim)
@@ -109,7 +109,7 @@ class Duckling(BaseTask):
 
         self._root_states = gymtorch.wrap_tensor(actor_root_state)
         num_actors = self.get_num_actors_per_env()
-        
+
         self._duckling_root_states = self._root_states.view(self.num_envs, num_actors, actor_root_state.shape[-1])[..., 0, :]
         self._initial_duckling_root_states = self._duckling_root_states.clone()
         self._initial_duckling_root_states[:, 7:13] = 0
@@ -132,7 +132,7 @@ class Duckling(BaseTask):
 
         for i, joint_name in enumerate(self._joints):
             self._default_dof_pos[:, i] = self._dof_props_config[joint_name].get("init_pos", 0.0)
-        
+
         if self.custom_control:
             self.p_gains = []
             self.d_gains = []
@@ -144,11 +144,11 @@ class Duckling(BaseTask):
             self.p_gains = to_torch(self.p_gains, device=self.device)
             self.d_gains = to_torch(self.d_gains, device=self.device)
             self.max_efforts = to_torch(self.max_efforts, device=self.device)
-    
+
         self._initial_dof_pos = torch.zeros_like(self._dof_pos, device=self.device, dtype=torch.float)
         self._initial_dof_pos[:, :] = self._default_dof_pos
         self._initial_dof_vel = torch.zeros_like(self._dof_vel, device=self.device, dtype=torch.float)
-        
+
         self._rigid_body_state = gymtorch.wrap_tensor(rigid_body_state)
         bodies_per_env = self._rigid_body_state.shape[0] // self.num_envs
         rigid_body_state_reshaped = self._rigid_body_state.view(self.num_envs, bodies_per_env, 13)
@@ -162,11 +162,11 @@ class Duckling(BaseTask):
 
         contact_force_tensor = gymtorch.wrap_tensor(contact_force_tensor)
         self._contact_forces = contact_force_tensor.view(self.num_envs, bodies_per_env, 3)[..., :self.num_bodies, :]
-        
+
         self._terminate_buf = torch.ones(self.num_envs, device=self.device, dtype=torch.long)
-        
+
         self._build_termination_heights()
-        
+
         self._key_body_ids = self._build_key_body_ids_tensor(key_bodies)
         self._contact_body_ids = self._build_contact_body_ids_tensor(contact_bodies)
         self._mask_joint_ids = None
@@ -177,7 +177,7 @@ class Duckling(BaseTask):
                 self._mask_joint_values = torch_rand_float(self._mask_joint_random_range[0], self._mask_joint_random_range[1], (self.num_envs, len(self._mask_joint_ids)), device=self.device).squeeze()
             else:
                 self._mask_joint_values = torch.zeros(self.num_envs, len(self._mask_joint_ids), device=self.device)
-                
+
         self.last_contacts = torch.zeros(self.num_envs, len(self._key_body_ids), dtype=torch.bool, device=self.device, requires_grad=False)
         self.feet_air_time = torch.zeros(self.num_envs, self._key_body_ids.shape[0], dtype=torch.float, device=self.device, requires_grad=False)
         self.actions = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
@@ -208,7 +208,7 @@ class Duckling(BaseTask):
         self.torque_multiplier_range = self.cfg["env"].get("torqueMultiplierRange", [0.85, 1.15])
         if self.randomize_torques:
             self.randomize_torques_factors = torch.ones(self.num_envs, self.num_actions, device=self.device)
-   
+
         if self.viewer != None:
             self._init_camera()
 
@@ -270,7 +270,7 @@ class Duckling(BaseTask):
         self.gym.set_dof_state_tensor_indexed(self.sim,
                                               gymtorch.unwrap_tensor(self._dof_state),
                                               gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
-        
+
         self.progress_buf[env_ids] = 0
         self.reset_buf[env_ids] = 0
         self._terminate_buf[env_ids] = 0
@@ -282,7 +282,7 @@ class Duckling(BaseTask):
             self._push_step[env_ids] = torch.randint(self._push_step_interval-self._push_step_range, self._push_step_interval+self._push_step_range, (len(env_ids),), device=self.device)
             self._push_vels = torch_rand_float(-self.max_push_vel, self.max_push_vel, (self.num_envs, 2), device=self.device)  # lin vel x/y
         if self.randomize_torques:
-            self.randomize_torques_factors[env_ids, :] = torch_rand_float(self.torque_multiplier_range[0], self.torque_multiplier_range[1], 
+            self.randomize_torques_factors[env_ids, :] = torch_rand_float(self.torque_multiplier_range[0], self.torque_multiplier_range[1],
                                                                           (len(env_ids), self.num_actions), device=self.device)
         return
 
@@ -382,7 +382,7 @@ class Duckling(BaseTask):
                 root = tree.getroot()
                 for joint in root.findall('joint'):
                     joint_name = joint.get('name')
-                    
+
                     # Find the axis element (some joints may not have an explicit axis, default is often [1, 0, 0])
                     axis_element = joint.find('axis')
                     if axis_element is not None:
@@ -427,7 +427,7 @@ class Duckling(BaseTask):
             motor_efforts = []
             for dof in props["dof_props"]:
                 motor_efforts.append(props["dof_props"][dof]['motor_efforts'])
-    
+
         # create force sensors at the feet
         right_foot_idx = self.gym.find_asset_rigid_body_index(duckling_asset, "right_foot")
         left_foot_idx = self.gym.find_asset_rigid_body_index(duckling_asset, "left_foot")
@@ -435,7 +435,7 @@ class Duckling(BaseTask):
 
         self.gym.create_asset_force_sensor(duckling_asset, right_foot_idx, sensor_pose)
         self.gym.create_asset_force_sensor(duckling_asset, left_foot_idx, sensor_pose)
-        
+
         self.motor_efforts = to_torch(motor_efforts, device=self.device)
 
         self.torso_index = 0
@@ -486,7 +486,7 @@ class Duckling(BaseTask):
 
         if (self._pd_control):
             self._build_pd_action_offset_scale()
-        
+
         if self.randomize_com:
             self.randomize_com_values = torch_rand_float(self.com_randomize_range[0], self.com_randomize_range[1], (self.num_envs, 3), device=self.device)
             for i in range(self.num_envs):
@@ -502,13 +502,13 @@ class Duckling(BaseTask):
                     body_props,
                     recomputeInertia=True,
                 )
-        
+
         # object_rb_props = self.gym.get_actor_rigid_body_properties(self.envs[0], self.duckling_handles[0])
         # masses = [prop.mass for prop in object_rb_props]
         # print("masses:", masses)
 
         return
-    
+
     def _build_env(self, env_id, env_ptr, duckling_asset):
         col_group = env_id
         col_filter = self._get_duckling_collision_filter()
@@ -544,7 +544,7 @@ class Duckling(BaseTask):
 
     def _build_pd_action_offset_scale(self):
         num_joints = len(self._dof_offsets) - 1
-        
+
         lim_low = self.dof_limits_lower.cpu().numpy()
         lim_high = self.dof_limits_upper.cpu().numpy()
 
@@ -563,7 +563,7 @@ class Duckling(BaseTask):
 
                 lim_low[dof_offset:(dof_offset + dof_size)] = -curr_scale
                 lim_high[dof_offset:(dof_offset + dof_size)] = curr_scale
-                
+
                 #lim_low[dof_offset:(dof_offset + dof_size)] = -np.pi
                 #lim_high[dof_offset:(dof_offset + dof_size)] = np.pi
 
@@ -572,7 +572,7 @@ class Duckling(BaseTask):
                 curr_low = lim_low[dof_offset]
                 curr_high = lim_high[dof_offset]
                 curr_mid = 0.5 * (curr_high + curr_low)
-                
+
                 # extend the action range to be a bit beyond the joint limits so that the motors
                 # don't lose their strength as they approach the joint limits
                 curr_scale = 0.7 * (curr_high - curr_low)
@@ -638,8 +638,8 @@ class Duckling(BaseTask):
                                                 self._rigid_body_vel[:, 0, :],
                                                 self._rigid_body_ang_vel[:, 0, :],
                                                 self._dof_pos, self._dof_vel, key_body_pos,
-                                                self._local_root_obs, self._root_height_obs, 
-                                                self._dof_obs_size, self._dof_offsets, self._dof_axis_array, 
+                                                self._local_root_obs, self._root_height_obs,
+                                                self._dof_obs_size, self._dof_offsets, self._dof_axis_array,
                                                 self.projected_gravity, foot_contacts, self.actions, self.last_actions)
         else:
             key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
@@ -648,9 +648,9 @@ class Duckling(BaseTask):
                                                 self._rigid_body_vel[env_ids][:, 0, :],
                                                 self._rigid_body_ang_vel[env_ids][:, 0, :],
                                                 self._dof_pos[env_ids], self._dof_vel[env_ids], key_body_pos[env_ids],
-                                                self._local_root_obs, self._root_height_obs, 
-                                                self._dof_obs_size, self._dof_offsets, self._dof_axis_array, 
-                                                self.projected_gravity[env_ids], foot_contacts[env_ids], self.actions[env_ids], self.last_actions[env_ids])        
+                                                self._local_root_obs, self._root_height_obs,
+                                                self._dof_obs_size, self._dof_offsets, self._dof_axis_array,
+                                                self.projected_gravity[env_ids], foot_contacts[env_ids], self.actions[env_ids], self.last_actions[env_ids])
         # obs = compute_duckling_observations_max(body_pos, body_rot, body_vel, body_ang_vel, self._local_root_obs,
         #                                         self._root_height_obs)
 
@@ -660,7 +660,7 @@ class Duckling(BaseTask):
         #                                     self._rigid_body_vel[env_ids][:, 0, :],
         #                                     self._rigid_body_ang_vel[env_ids][:, 0, :],
         #                                     self._dof_pos[env_ids], self._dof_vel[env_ids], key_body_pos[env_ids],
-        #                                     self._local_root_obs, self._root_height_obs, 
+        #                                     self._local_root_obs, self._root_height_obs,
         #                                     self._dof_obs_size, self._dof_offsets, self._dof_axis_array)
         return obs
 
@@ -724,7 +724,7 @@ class Duckling(BaseTask):
         self._compute_reset()
 
         self.last_actions[:] = self.actions[:]
-        
+
         self.extras["terminate"] = self._terminate_buf
 
         # debug viz
@@ -736,9 +736,9 @@ class Duckling(BaseTask):
             push_mask = (self.progress_buf >= self._push_step) & ((self.progress_buf) <= (self._push_step + self._continou_push_steps))
             push_env_ids = push_mask.nonzero(as_tuple=False).flatten()
             if len(push_env_ids) > 0:
-                self._push_robots(push_env_ids)            
+                self._push_robots(push_env_ids)
         return
-    
+
     def _push_robots(self, env_ids):
         """Random pushes the robots. Emulates an impulse by setting a randomized base velocity."""
         self._duckling_root_states[env_ids, 7:9] = self._push_vels[env_ids]
@@ -786,7 +786,7 @@ class Duckling(BaseTask):
             joint_id = self.gym.find_actor_dof_handle(env_ptr, actor_handle, joint_name)
             assert(joint_id != -1)
             mask_joint_ids.append(joint_id)
-        
+
         for joint_name in all_joints:
             if joint_name not in mask_joints:
                 joint_id = self.gym.find_actor_dof_handle(env_ptr, actor_handle, joint_name)
@@ -804,9 +804,9 @@ class Duckling(BaseTask):
     def _init_camera(self):
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self._cam_prev_char_pos = self._duckling_root_states[0, 0:3].cpu().numpy()
-        
-        cam_pos = gymapi.Vec3(self._cam_prev_char_pos[0], 
-                              self._cam_prev_char_pos[1] - 3.0, 
+
+        cam_pos = gymapi.Vec3(self._cam_prev_char_pos[0],
+                              self._cam_prev_char_pos[1] - 3.0,
                               1.0)
         cam_target = gymapi.Vec3(self._cam_prev_char_pos[0],
                                  self._cam_prev_char_pos[1],
@@ -817,14 +817,14 @@ class Duckling(BaseTask):
     def _update_camera(self):
         self.gym.refresh_actor_root_state_tensor(self.sim)
         char_root_pos = self._duckling_root_states[0, 0:3].cpu().numpy()
-        
+
         cam_trans = self.gym.get_viewer_camera_transform(self.viewer, None)
         cam_pos = np.array([cam_trans.p.x, cam_trans.p.y, cam_trans.p.z])
         cam_delta = cam_pos - self._cam_prev_char_pos
 
         new_cam_target = gymapi.Vec3(char_root_pos[0], char_root_pos[1], 1.0)
-        new_cam_pos = gymapi.Vec3(char_root_pos[0] + cam_delta[0], 
-                                  char_root_pos[1] + cam_delta[1], 
+        new_cam_pos = gymapi.Vec3(char_root_pos[0] + cam_delta[0],
+                                  char_root_pos[1] + cam_delta[1],
                                   cam_pos[2])
 
         self.gym.viewer_camera_look_at(self.viewer, None, new_cam_pos, new_cam_target)
@@ -1109,6 +1109,8 @@ def compute_duckling_observations(
     # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, int, List[int], List[int], Tensor, Tensor, Tensor, Tensor) -> Tensor
     # realistic observations
 
+    foot_contacts = torch.zeros_like(foot_contacts)
+
     obs = torch.cat(
         (
             projected_gravity,
@@ -1193,17 +1195,17 @@ def compute_duckling_observations_max(body_pos, body_rot, body_vel, body_ang_vel
 
     root_h = root_pos[:, 2:3]
     heading_rot = torch_utils.calc_heading_quat_inv(root_rot)
-    
+
     if (not root_height_obs):
         root_h_obs = torch.zeros_like(root_h)
     else:
         root_h_obs = root_h
-    
+
     heading_rot_expand = heading_rot.unsqueeze(-2)
     heading_rot_expand = heading_rot_expand.repeat((1, body_pos.shape[1], 1))
-    flat_heading_rot = heading_rot_expand.reshape(heading_rot_expand.shape[0] * heading_rot_expand.shape[1], 
+    flat_heading_rot = heading_rot_expand.reshape(heading_rot_expand.shape[0] * heading_rot_expand.shape[1],
                                                heading_rot_expand.shape[2])
-    
+
     root_pos_expand = root_pos.unsqueeze(-2)
     local_body_pos = body_pos - root_pos_expand
     flat_local_body_pos = local_body_pos.reshape(local_body_pos.shape[0] * local_body_pos.shape[1], local_body_pos.shape[2])
@@ -1215,7 +1217,7 @@ def compute_duckling_observations_max(body_pos, body_rot, body_vel, body_ang_vel
     flat_local_body_rot = quat_mul(flat_heading_rot, flat_body_rot)
     flat_local_body_rot_obs = torch_utils.quat_to_tan_norm(flat_local_body_rot)
     local_body_rot_obs = flat_local_body_rot_obs.reshape(body_rot.shape[0], body_rot.shape[1] * flat_local_body_rot_obs.shape[1])
-    
+
     if (local_root_obs):
         root_rot_obs = torch_utils.quat_to_tan_norm(root_rot)
         local_body_rot_obs[..., 0:6] = root_rot_obs
@@ -1223,11 +1225,11 @@ def compute_duckling_observations_max(body_pos, body_rot, body_vel, body_ang_vel
     flat_body_vel = body_vel.reshape(body_vel.shape[0] * body_vel.shape[1], body_vel.shape[2])
     flat_local_body_vel = quat_rotate(flat_heading_rot, flat_body_vel)
     local_body_vel = flat_local_body_vel.reshape(body_vel.shape[0], body_vel.shape[1] * body_vel.shape[2])
-    
+
     flat_body_ang_vel = body_ang_vel.reshape(body_ang_vel.shape[0] * body_ang_vel.shape[1], body_ang_vel.shape[2])
     flat_local_body_ang_vel = quat_rotate(flat_heading_rot, flat_body_ang_vel)
     local_body_ang_vel = flat_local_body_ang_vel.reshape(body_ang_vel.shape[0], body_ang_vel.shape[1] * body_ang_vel.shape[2])
-    
+
     obs = torch.cat((root_h_obs, local_body_pos, local_body_rot_obs, local_body_vel, local_body_ang_vel), dim=-1)
     return obs
 
@@ -1261,7 +1263,7 @@ def compute_duckling_reset(reset_buf, progress_buf, contact_buf, contact_body_id
         # so only check after first couple of steps
         has_fallen *= (progress_buf > 1)
         terminated = torch.where(has_fallen, torch.ones_like(reset_buf), terminated)
-    
+
     reset = torch.where(progress_buf >= max_episode_length - 1, torch.ones_like(reset_buf), terminated)
 
     return reset, terminated
