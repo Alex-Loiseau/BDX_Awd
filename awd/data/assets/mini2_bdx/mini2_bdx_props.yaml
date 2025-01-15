@@ -29,7 +29,7 @@ num_amp_obs_per_step: 53 # ?
 dof_props:
   left_hip_yaw:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -42,7 +42,7 @@ dof_props:
     }
   left_hip_roll:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -55,7 +55,7 @@ dof_props:
     }
   left_hip_pitch:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -68,7 +68,7 @@ dof_props:
     }
   left_knee:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -81,7 +81,7 @@ dof_props:
     }
   left_ankle:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -94,7 +94,7 @@ dof_props:
     }
   neck_pitch:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 8,
       "friction": 0.03,
       "armature": 0.0056,
@@ -107,7 +107,7 @@ dof_props:
     }
   head_pitch:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 5,
       "friction": 0.03,
       "armature": 0.0056,
@@ -120,7 +120,7 @@ dof_props:
     }
   head_yaw:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 5,
       "friction": 0.03,
       "armature": 0.0056,
@@ -133,7 +133,7 @@ dof_props:
     }
   head_roll:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 5,
       "friction": 0.03,
       "armature": 0.0056,
@@ -146,7 +146,7 @@ dof_props:
     }
   left_antenna:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 5,
       "friction": 0.03,
       "armature": 0.0056,
@@ -159,7 +159,7 @@ dof_props:
     }
   right_antenna:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 5,
       "friction": 0.03,
       "armature": 0.0056,
@@ -172,7 +172,7 @@ dof_props:
     }
   right_hip_yaw:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -185,7 +185,7 @@ dof_props:
     }
   right_hip_roll:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -198,7 +198,7 @@ dof_props:
     }
   right_hip_pitch:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -211,7 +211,7 @@ dof_props:
     }
   right_knee:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
@@ -224,7 +224,7 @@ dof_props:
     }
   right_ankle:
     {
-      "damping": 1,
+      "damping": 0.5,
       "stiffness": 10,
       "friction": 0.03,
       "armature": 0.0056,
