@@ -39,7 +39,7 @@ env:
   randomizeMaskJoints: False
   commandChangeStepsMin: 1000
   commandChangeStepsMax: 1001
-  period: 0.43
+  period: 0.66
 
   asset:
     assetRoot: "awd/data/assets"
