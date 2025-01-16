@@ -688,17 +688,17 @@ class Duckling(BaseTask):
         # /DEBUG
 
         if self.custom_control: # custom position control
-            self.render()
-            for _ in range(self.control_freq_inv):
-                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
-                if self.randomize_torques:
-                    self.torques *= self.randomize_torques_factors
-                self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
-                self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
-                self.gym.simulate(self.sim)
-                if self.device == "cpu":
-                    self.gym.fetch_results(self.sim, True)
-                self.gym.refresh_dof_state_tensor(self.sim)
+            # self.render()
+            # for _ in range(self.control_freq_inv):
+            self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
+            if self.randomize_torques:
+                self.torques *= self.randomize_torques_factors
+            self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
+            self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
+                # self.gym.simulate(self.sim)
+                # if self.device == "cpu":
+                #     self.gym.fetch_results(self.sim, True)
+                # self.gym.refresh_dof_state_tensor(self.sim)
         elif (self._pd_control): # isaac based position contol
             pd_tar = self._action_to_pd_targets(self.actions)
             if self._mask_joint_values is not None:
@@ -712,9 +712,9 @@ class Duckling(BaseTask):
 
         return
 
-    def _physics_step(self):
-        if self._pd_control:
-            super()._physics_step()
+    # def _physics_step(self):
+    #     if self._pd_control:
+    #         super()._physics_step()
 
     def post_physics_step(self):
         self.progress_buf += 1
