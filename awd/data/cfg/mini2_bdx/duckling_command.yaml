@@ -54,9 +54,9 @@ env:
     # rewards
     linearVelocityXYRewardScale: [1.0, 1.0]
     angularVelocityZRewardScale: 1.5
-    torqueRewardScale: -0.000
+    torqueRewardScale: -0.0002
     feetAirTimeRewardScale: 1.0
-    actionRateRewardScale: -0.001
+    actionRateRewardScale: -0.1
     standStillRewardScale: 0.0
 
     # normalization

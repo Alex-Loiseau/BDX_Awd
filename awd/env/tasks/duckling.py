@@ -88,6 +88,9 @@ class Duckling(BaseTask):
 
         self.dt = self.control_freq_inv * sim_params.dt
 
+
+        self.common_t = 0
+
         # get gym GPU state tensors
         #self.gym.refresh_actor_root_state_tensor(self.sim)
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
@@ -412,7 +415,7 @@ class Duckling(BaseTask):
         asset_options.max_linear_velocity = 100.0
         # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 3 effort)
         asset_options.default_dof_drive_mode = 0
-        #asset_options.fix_base_link = True
+        # asset_options.fix_base_link = True
         motor_efforts = None
         duckling_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
         props = self._get_asset_properties()
@@ -676,6 +679,14 @@ class Duckling(BaseTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
+
+        # DEBUG replay moves
+        # self.actions = torch.zeros_like(self.actions)
+        # _, _, motion_dof_pos, _, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device)) # TODO
+        # print(motion_dof_pos)
+        # self.actions[:, :] = motion_dof_pos - self._default_dof_pos
+        # /DEBUG
+
         if self.custom_control: # custom position control
             self.render()
             for _ in range(self.control_freq_inv):
@@ -709,6 +720,7 @@ class Duckling(BaseTask):
         self.progress_buf += 1
         self.common_step_counter += 1
         self.randomize_buf += 1
+        self.common_t += self.dt
 
         # Computing average velocities over the last gait
         # Shift back.
