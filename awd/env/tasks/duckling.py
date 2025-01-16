@@ -673,6 +673,7 @@ class Duckling(BaseTask):
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
         if self.custom_control: # custom position control
+            self.render()
             for _ in range(self.control_freq_inv):
                 self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
                 if self.randomize_torques:
@@ -695,6 +696,10 @@ class Duckling(BaseTask):
             self.gym.set_dof_actuation_force_tensor(self.sim, force_tensor)
 
         return
+
+    def _physics_step(self):
+        if self._pd_control:
+            super()._physics_step()
 
     def post_physics_step(self):
         self.progress_buf += 1
