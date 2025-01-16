@@ -530,7 +530,11 @@ class Duckling(BaseTask):
 
         dof_names = self.gym.get_asset_dof_names(duckling_asset)
         dof_prop = self.gym.get_asset_dof_properties(duckling_asset)
-        dof_prop["driveMode"] = gymapi.DOF_MODE_POS
+        if self.custom_control:
+            dof_prop["driveMode"] = gymapi.DOF_MODE_EFFORT
+        else:
+            dof_prop["driveMode"] = gymapi.DOF_MODE_POS
+
         for i, dof_name in enumerate(dof_names):
             if dof_name not in self._dof_props_config:
                 continue
