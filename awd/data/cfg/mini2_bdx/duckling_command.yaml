@@ -30,7 +30,8 @@ env:
   localRootObs: True
   keyBodies: ["left_foot", "right_foot"]
   contactBodies: ["foot_assembly", "foot_assembly_2"]
-  maskJoints: ['neck_pitch', 'head_pitch', 'head_yaw']
+  maskJoints: #['neck_pitch', 'head_pitch', 'head_yaw']
+  maskJoints: []
   maskJointRandomRange: [-0.5, 0.5]
   terminationHeight: -0.05
   initHeight: 0.2
