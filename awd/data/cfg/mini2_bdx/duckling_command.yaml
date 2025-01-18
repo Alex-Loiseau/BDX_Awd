@@ -8,23 +8,23 @@ env:
   
   pdControl: True
   powerScale: 1.0
-  controlFrequencyInv: 4
+  controlFrequencyInv: 2
   stateInit: "Hybrid"
   # hybridInitProb: 0.5
   hybridInitProb: 0
   numAMPObsSteps: 20
 
-  pushRobots: False
+  pushRobots: True
   pushStep: 300 #s
   pushStepRandomRange: 80 # push works at pushStep +- pushStepRandomRange
   continousPushSteps: 10
-  maxPushVelXy: 0.05
+  maxPushVelXy: 0.03
 
   # COM is randomized only once for each actor, but not at each reset
   randomizeCom: True
-  comRandomizeRange: [-0.05, 0.05]
+  comRandomizeRange: [-0.1, 0.1]
   randomizeTorques: True
-  torqueMultiplierRange: [0.95, 1.05]
+  torqueMultiplierRange: [0.9, 1.1]
 
   customControl: True
 
@@ -68,12 +68,12 @@ env:
     useAverageVelocities: True
 
   randomCommandVelocityRanges:
-    linear_x: [-0.2, 0.3] # min max [m/s]
+    linear_x: [-0.2, 0.4] # min max [m/s]
     linear_y: [-0.2, 0.2]   # min max [m/s]
-    yaw: [-0.3, 0.3]          # min max [rad/s]
+    yaw: [-0.5, 0.5]          # min max [rad/s]
   
   terrain:
-    terrainType: plane # plane, or trimesh
+    terrainType: trimesh # plane, or trimesh
     staticFriction: 1.0 # [-]
     dynamicFriction: 1.0 # [-]
     restitution: 0. # [-]
@@ -85,7 +85,7 @@ env:
     numLevels: 4
     numTerrains: 10
     # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-    terrainProportions: [0.2, 0.2, 0.2, 0.2, 0.2]
+    terrainProportions: [0.0, 1, 0.0, 0.0, 0]
     # tri mesh only:
     slopeTreshold: 0.8
     horizontalScale: 0.25
@@ -94,13 +94,13 @@ env:
     numPerEnv: 2
     minHeight: -0.001
     maxHeight: 0.001
-    step: 0.05
+    step: 0.01
     platformSize: 0.5 # pyramids
     stepHeightRange: [-0.05, 0.05] # pyramid stairs
     stepWidth: 0.1
 
 sim:
-  substeps: 1
+  substeps: 2
   physx:
     num_threads: 4
     solver_type: 1  # 0: pgs, 1: tgs

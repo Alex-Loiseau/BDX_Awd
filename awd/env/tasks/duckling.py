@@ -766,8 +766,8 @@ class Duckling(BaseTask):
             if len(push_env_ids) > 0:
                 self._push_robots(push_env_ids)            
 
-        self.saved_obs.append(self.obs_buf[0].cpu().numpy())
-        pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
+        # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
+        # pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
         
         
         return
