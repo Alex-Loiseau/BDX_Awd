@@ -88,6 +88,8 @@ class Duckling(BaseTask):
         super().__init__(cfg=self.cfg)
         
         self.dt = self.control_freq_inv * sim_params.dt        
+
+        self.common_t = 0
         
         # get gym GPU state tensors
         #self.gym.refresh_actor_root_state_tensor(self.sim)
@@ -408,15 +410,16 @@ class Duckling(BaseTask):
         asset_file = os.path.basename(asset_path)
 
         asset_options = gymapi.AssetOptions()
-        # asset_options.density = 0.001
-        # asset_options.armature = 0.0
-        # asset_options.thickness = 0.01
-        asset_options.angular_damping = 0.01
-        asset_options.max_angular_velocity = 100.0
+        asset_options.density = 0.001
+        asset_options.armature = self._dof_props_config["left_hip_yaw"]["armature"]
+        asset_options.thickness = 0.01
+        asset_options.angular_damping = 0.00
+        asset_options.linear_damping = 0.0
+        asset_options.max_angular_velocity = self._dof_props_config["left_hip_yaw"]["velocity"]
         asset_options.max_linear_velocity = 100.0
         # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 3 effort)
-        asset_options.default_dof_drive_mode = 0
-        #asset_options.fix_base_link = True
+        asset_options.default_dof_drive_mode = 3
+        # asset_options.fix_base_link = True
         motor_efforts = None
         duckling_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
         props = self._get_asset_properties()
@@ -534,19 +537,20 @@ class Duckling(BaseTask):
 
         dof_names = self.gym.get_asset_dof_names(duckling_asset)
         dof_prop = self.gym.get_asset_dof_properties(duckling_asset)
-        if self.custom_control or (not self._pd_control):
-            dof_prop["driveMode"] = gymapi.DOF_MODE_EFFORT
-        else:
-            dof_prop["driveMode"] = gymapi.DOF_MODE_POS
+        # if self.custom_control or (not self._pd_control):
+        #     dof_prop["driveMode"] = gymapi.DOF_MODE_EFFORT
+        # else:
+        #     dof_prop["driveMode"] = gymapi.DOF_MODE_POS
         for i, dof_name in enumerate(dof_names):
             if dof_name not in self._dof_props_config:
                 continue
-            for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
+
+            # for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
+            for prop_type in ["friction"]:
                 if self._dof_props_config[dof_name].get(prop_type, None) is not None:
                     dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type]
-                else:
-                    print(f"WARNING: No stiffness values for {dof_name}")
-            self.gym.set_actor_dof_properties(env_ptr, duckling_handle, dof_prop)
+
+        self.gym.set_actor_dof_properties(env_ptr, duckling_handle, dof_prop)
         self.duckling_handles.append(duckling_handle)
 
     def _build_pd_action_offset_scale(self):
@@ -679,15 +683,27 @@ class Duckling(BaseTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
+
+        # DEBUG replay moves
+        # self.actions = torch.zeros_like(self.actions)
+        # _, _, motion_dof_pos, _, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device))
+        # self.actions[:, :] = motion_dof_pos - self._default_dof_pos
+        # /DEBUG
+
         if self.custom_control: # custom position control
-            pd_tar = self._action_to_pd_targets(self.actions)
-            self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
-            if self.randomize_torques:
-                self.torques *= self.randomize_torques_factors
-            self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
-            if self._mask_joint_values is not None:
-                self.torques[:, self._mask_joint_ids] = self._mask_joint_values
-            self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
+            self.render()
+            for _ in range(self.control_freq_inv):
+                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
+                if self.randomize_torques:
+                    self.torques *= self.randomize_torques_factors
+                self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
+                if self._mask_joint_values is not None:
+                    self.torques[:, self._mask_joint_ids] = self._mask_joint_values
+                self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
+                self.gym.simulate(self.sim)
+                if self.device == 'cpu':
+                    self.gym.fetch_results(self.sim, True)
+                self.gym.refresh_dof_state_tensor(self.sim)
         elif (self._pd_control): # isaac based position contol
             pd_tar = self._action_to_pd_targets(self.actions)
             if self._mask_joint_values is not None:
@@ -703,10 +719,15 @@ class Duckling(BaseTask):
 
         return
 
+    def _physics_step(self):
+        if not self.custom_control:
+            super()._physics_step()
+
     def post_physics_step(self):
         self.progress_buf += 1
         self.common_step_counter += 1
         self.randomize_buf += 1
+        self.common_t += self.dt
 
         # Computing average velocities over the last gait
         # Shift back.
@@ -745,8 +766,8 @@ class Duckling(BaseTask):
             if len(push_env_ids) > 0:
                 self._push_robots(push_env_ids)            
 
-        # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
-        # pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
+        self.saved_obs.append(self.obs_buf[0].cpu().numpy())
+        pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
         
         
         return
