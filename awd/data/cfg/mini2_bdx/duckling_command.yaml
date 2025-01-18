@@ -8,7 +8,7 @@ env:
   
   pdControl: False
   powerScale: 1.0
-  controlFrequencyInv: 2
+  controlFrequencyInv: 4
   stateInit: "Hybrid"
   # hybridInitProb: 0.5
   hybridInitProb: 0
@@ -73,8 +73,8 @@ env:
     yaw: [-0.3, 0.3]          # min max [rad/s]
 
   # randomCommandVelocityRanges:
-  #   linear_x: [0.0, 0.0] # min max [m/s]
-  #   linear_y: [1, 1]   # min max [m/s]
+  #   linear_x: [0.3, 0.3] # min max [m/s]
+  #   linear_y: [0, 0]   # min max [m/s]
   #   yaw: [0, 0]          # min max [rad/s]
   
   terrain:
