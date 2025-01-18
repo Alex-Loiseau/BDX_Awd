@@ -8,7 +8,7 @@ env:
   
   pdControl: False
   powerScale: 1.0
-  controlFrequencyInv: 4
+  controlFrequencyInv: 2
   stateInit: "Hybrid"
   # hybridInitProb: 0.5
   hybridInitProb: 0
