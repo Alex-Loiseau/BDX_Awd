@@ -1062,7 +1062,7 @@
         <parent link="knee_and_ankle_assembly_2" />
         <child link="foot_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-1.570796326794896558" upper="1.570796326794896558"/>
+        <limit effort="100" velocity="100" lower="-1.570796326794896558" upper="1.570796326794896558"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="left_knee" type="revolute">
@@ -1070,7 +1070,7 @@
         <parent link="knee_and_ankle_assembly" />
         <child link="knee_and_ankle_assembly_2" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-1.570796326794896558" upper="1.570796326794896558"/>
+        <limit effort="100" velocity="100" lower="-1.570796326794896558" upper="1.570796326794896558"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="left_hip_pitch" type="revolute">
@@ -1078,7 +1078,7 @@
         <parent link="left_roll_to_pitch_assembly" />
         <child link="knee_and_ankle_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-1.2217304763960306069" upper="0.52359877559829881566"/>
+        <limit effort="100" velocity="100" lower="-1.2217304763960306069" upper="0.52359877559829881566"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="left_hip_roll" type="revolute">
@@ -1086,7 +1086,7 @@
         <parent link="hip_roll_assembly" />
         <child link="left_roll_to_pitch_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.43633231299858238339" upper="0.43633231299858238339"/>
+        <limit effort="100" velocity="100" lower="-0.43633231299858238339" upper="0.43633231299858238339"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="left_hip_yaw" type="revolute">
@@ -1094,7 +1094,7 @@
         <parent link="trunk_assembly" />
         <child link="hip_roll_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.52359877559829881566" upper="0.52359877559829881566"/>
+        <limit effort="100" velocity="100" lower="-0.52359877559829881566" upper="0.52359877559829881566"/>
         <joint_properties friction="0.0"/>
     </joint>
     <link name="hip_roll_assembly_2">
@@ -1660,7 +1660,7 @@
         <parent link="knee_and_ankle_assembly_4" />
         <child link="foot_assembly_2" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-1.570796326794896558" upper="1.570796326794896558"/>
+        <limit effort="100" velocity="100" lower="-1.570796326794896558" upper="1.570796326794896558"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="right_knee" type="revolute">
@@ -1668,7 +1668,7 @@
         <parent link="knee_and_ankle_assembly_3" />
         <child link="knee_and_ankle_assembly_4" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-1.570796326794896558" upper="1.570796326794896558"/>
+        <limit effort="100" velocity="100" lower="-1.570796326794896558" upper="1.570796326794896558"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="right_hip_pitch" type="revolute">
@@ -1676,7 +1676,7 @@
         <parent link="right_roll_to_pitch_assembly" />
         <child link="knee_and_ankle_assembly_3" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.52359877559829881566" upper="1.2217304763960306069"/>
+        <limit effort="100" velocity="100" lower="-0.52359877559829881566" upper="1.2217304763960306069"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="right_hip_roll" type="revolute">
@@ -1684,7 +1684,7 @@
         <parent link="hip_roll_assembly_2" />
         <child link="right_roll_to_pitch_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.43633231299858238339" upper="0.43633231299858238339"/>
+        <limit effort="100" velocity="100" lower="-0.43633231299858238339" upper="0.43633231299858238339"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="right_hip_yaw" type="revolute">
@@ -1692,7 +1692,7 @@
         <parent link="trunk_assembly" />
         <child link="hip_roll_assembly_2" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.52359877559829881566" upper="0.52359877559829881566"/>
+        <limit effort="100" velocity="100" lower="-0.52359877559829881566" upper="0.52359877559829881566"/>
         <joint_properties friction="0.0"/>
     </joint>
     <link name="neck_pitch_assembly">
@@ -2183,7 +2183,7 @@
         <parent link="head_assembly" />
         <child link="left_antenna_holder" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-1.570796326794896558" upper="1.570796326794896558"/>
+        <limit effort="100" velocity="100" lower="-1.570796326794896558" upper="1.570796326794896558"/>
         <joint_properties friction="0.0"/>
     </joint>
     <link name="right_antenna_holder">
@@ -2228,7 +2228,7 @@
         <parent link="head_assembly" />
         <child link="right_antenna_holder" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-1.570796326794896558" upper="1.570796326794896558"/>
+        <limit effort="100" velocity="100" lower="-1.570796326794896558" upper="1.570796326794896558"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="head_roll" type="revolute">
@@ -2236,7 +2236,7 @@
         <parent link="neck_yaw_assembly" />
         <child link="head_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.52359877559829881566" upper="0.52359877559829881566"/>
+        <limit effort="100" velocity="100" lower="-0.52359877559829881566" upper="0.52359877559829881566"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="head_yaw" type="revolute">
@@ -2244,7 +2244,7 @@
         <parent link="head_pitch_to_yaw" />
         <child link="neck_yaw_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-2.7925268031909271649" upper="2.7925268031909271649"/>
+        <limit effort="100" velocity="100" lower="-2.7925268031909271649" upper="2.7925268031909271649"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="head_pitch" type="revolute">
@@ -2252,7 +2252,7 @@
         <parent link="neck_pitch_assembly" />
         <child link="head_pitch_to_yaw" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.785398163397448279" upper="0.785398163397448279"/>
+        <limit effort="100" velocity="100" lower="-0.785398163397448279" upper="0.785398163397448279"/>
         <joint_properties friction="0.0"/>
     </joint>
     <joint name="neck_pitch" type="revolute">
@@ -2260,7 +2260,7 @@
         <parent link="trunk_assembly" />
         <child link="neck_pitch_assembly" />
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="20" lower="-0.34906585039886589561" upper="1.1344640137963142301"/>
+        <limit effort="100" velocity="100" lower="-0.34906585039886589561" upper="1.1344640137963142301"/>
         <joint_properties friction="0.0"/>
     </joint>
 </robot>
