@@ -40,6 +40,7 @@ from isaacgym.terrain_utils import *
 from utils import torch_utils
 
 from env.tasks.base_task import BaseTask
+import pickle
 
 class Duckling(BaseTask):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
@@ -195,6 +196,7 @@ class Duckling(BaseTask):
 
         self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
 
+
         self.common_step_counter = 0
         self._push_robots_flag = self.cfg["env"].get("pushRobots", False)
         self._push_step_interval = self.cfg["env"].get("pushStep", 150)
@@ -213,6 +215,8 @@ class Duckling(BaseTask):
             self._init_camera()
 
         self.init_done = True
+
+        self.saved_obs = []
         return
 
     def get_obs_size(self):
@@ -740,6 +744,11 @@ class Duckling(BaseTask):
             push_env_ids = push_mask.nonzero(as_tuple=False).flatten()
             if len(push_env_ids) > 0:
                 self._push_robots(push_env_ids)            
+
+        # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
+        # pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
+        
+        
         return
     
     def _push_robots(self, env_ids):

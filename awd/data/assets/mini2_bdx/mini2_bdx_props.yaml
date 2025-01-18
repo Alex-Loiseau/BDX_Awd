@@ -30,11 +30,11 @@ dof_props:
   left_hip_yaw:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
-      "max_effort": 100,
+      "max_effort": 3,
       "init_pos": 0.002,
       "motor_efforts": 10,
       "p_gain": 5.68,
@@ -43,7 +43,7 @@ dof_props:
   left_hip_roll:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -56,7 +56,7 @@ dof_props:
   left_hip_pitch:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -69,7 +69,7 @@ dof_props:
   left_knee:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -82,7 +82,7 @@ dof_props:
   left_ankle:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -173,7 +173,7 @@ dof_props:
   right_hip_yaw:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -186,7 +186,7 @@ dof_props:
   right_hip_roll:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -199,7 +199,7 @@ dof_props:
   right_hip_pitch:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -212,7 +212,7 @@ dof_props:
   right_knee:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
@@ -225,7 +225,7 @@ dof_props:
   right_ankle:
     {
       "damping": 1.0,
-      "stiffness": 10,
+      "stiffness": 0,
       "friction": 0.03,
       "armature": 0.0056,
       "velocity": 300,
