@@ -333,12 +333,12 @@ def main():
     torch.onnx.export(
         traced,
         *adapter.flattened_inputs,
-        model_path_out,
+        "ONNX.onnx",
         verbose=True,
         input_names=["obs"],
         output_names=["actions"],
     )
-    print(f"saved to {model_path_out}")
+    print(f"saved to ONNX.onnx")
 
     return
 
