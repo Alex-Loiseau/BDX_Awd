@@ -10,8 +10,8 @@ env:
   powerScale: 1.0
   controlFrequencyInv: 2
   stateInit: "Hybrid"
-  hybridInitProb: 0.5
-  # hybridInitProb: 0
+  # hybridInitProb: 0.5
+  hybridInitProb: 0
   numAMPObsSteps: 20
 
   pushRobots: False
@@ -65,11 +65,11 @@ env:
     # normalization
     linearVelocityScale: [1.0, 1.0]
     angularVelocityScale: 1.0
-    useAverageVelocities: True
+    useAverageVelocities: False
 
   randomCommandVelocityRanges:
-    linear_x: [-0.2, 0.3] # min max [m/s]
-    linear_y: [-0.2, 0.2]   # min max [m/s]
+    linear_x: [-0.3, 0.4] # min max [m/s]
+    linear_y: [-0.3, 0.3]   # min max [m/s]
     yaw: [-0.3, 0.3]          # min max [rad/s]
 
   # randomCommandVelocityRanges:
