@@ -65,7 +65,7 @@ env:
     # normalization
     linearVelocityScale: [1.0, 1.0]
     angularVelocityScale: 1.0
-    useAverageVelocities: False
+    useAverageVelocities: True
 
   randomCommandVelocityRanges:
     linear_x: [-0.3, 0.4] # min max [m/s]
