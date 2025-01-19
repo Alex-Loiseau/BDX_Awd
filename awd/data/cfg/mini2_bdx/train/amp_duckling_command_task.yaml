@@ -42,6 +42,8 @@ params:
   load_checkpoint: False
 
   config:
+    clip_actions: 5
+    clip_observations: 100
     name: Duckling
     env_name: rlgpu
     multi_gpu: False
