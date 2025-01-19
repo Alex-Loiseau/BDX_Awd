@@ -688,6 +688,9 @@ class Duckling(BaseTask):
         # self.actions = torch.zeros_like(self.actions)
         # _, _, motion_dof_pos, _, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device))
         # self.actions[:, :] = motion_dof_pos - self._default_dof_pos
+
+        # self.actions[:, 3] = 1.5*np.sin(2*np.pi*0.1*self.common_t) - self._default_dof_pos[:, 3]
+        # self.actions[:, 14] = 1.5*np.sin(2*np.pi*0.1*self.common_t) - self._default_dof_pos[:, 14]
         # /DEBUG
 
         if self.custom_control: # custom position control
