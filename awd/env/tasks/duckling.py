@@ -1145,7 +1145,7 @@ def compute_duckling_observations(
     # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, int, List[int], List[int], Tensor, Tensor, Tensor, Tensor) -> Tensor
     # realistic observations
 
-    foot_contacts = torch.zeros_like(foot_contacts)
+    # foot_contacts = torch.zeros_like(foot_contacts)
 
     obs = torch.cat(
         (
