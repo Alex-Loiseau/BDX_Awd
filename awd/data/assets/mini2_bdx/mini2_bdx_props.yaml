@@ -27,7 +27,7 @@ num_amp_obs_per_step: 53
 
   # THIS was working
   # {
-  #   "damping": 0,
+  #   "damping": 0.6,
   #   "stiffness": 0,
   #   "friction": 0.06,
   #   "armature": 0.002,
@@ -44,7 +44,7 @@ num_amp_obs_per_step: 53
 dof_props:
   left_hip_yaw:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.01,
@@ -53,11 +53,11 @@ dof_props:
       "init_pos": 0.002,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   left_hip_roll:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -66,11 +66,11 @@ dof_props:
       "init_pos": 0.053,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   left_hip_pitch:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -79,11 +79,11 @@ dof_props:
       "init_pos": -0.63,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   left_knee:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -92,11 +92,11 @@ dof_props:
       "init_pos": 1.368,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   left_ankle:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -105,11 +105,11 @@ dof_props:
       "init_pos": -0.784,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   neck_pitch:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 8,
       "friction": 0.13,
       "armature": 0.002,
@@ -118,11 +118,11 @@ dof_props:
       "init_pos": -0.000,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   head_pitch:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 5,
       "friction": 0.13,
       "armature": 0.002,
@@ -131,11 +131,11 @@ dof_props:
       "init_pos": -0.000,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   head_yaw:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 5,
       "friction": 0.13,
       "armature": 0.002,
@@ -144,11 +144,11 @@ dof_props:
       "init_pos": 0.000,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   head_roll:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 5,
       "friction": 0.13,
       "armature": 0.002,
@@ -157,11 +157,11 @@ dof_props:
       "init_pos": 0.000,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   left_antenna:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 5,
       "friction": 0.13,
       "armature": 0.002,
@@ -170,11 +170,11 @@ dof_props:
       "init_pos": 0.000,
       "motor_efforts": 10,
       "p_gain": 0.1,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   right_antenna:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 5,
       "friction": 0.13,
       "armature": 0.002,
@@ -183,11 +183,11 @@ dof_props:
       "init_pos": 0.000,
       "motor_efforts": 10,
       "p_gain": 0.1,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   right_hip_yaw:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -196,11 +196,11 @@ dof_props:
       "init_pos": -0.003,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   right_hip_roll:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -209,11 +209,11 @@ dof_props:
       "init_pos": -0.065,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   right_hip_pitch:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -222,11 +222,11 @@ dof_props:
       "init_pos": 0.635,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   right_knee:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -235,11 +235,11 @@ dof_props:
       "init_pos": 1.379,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
   right_ankle:
     {
-      "damping": 0,
+      "damping": 0.6,
       "stiffness": 0,
       "friction": 0.13,
       "armature": 0.002,
@@ -248,5 +248,5 @@ dof_props:
       "init_pos": -0.796,
       "motor_efforts": 10,
       "p_gain": 10.7,
-      "d_gain": 0.6,
+      "d_gain": 0.0,
     }
