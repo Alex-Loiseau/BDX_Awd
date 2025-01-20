@@ -7,7 +7,7 @@ env:
   enableDebugVis: False
   
   pdControl: False
-  powerScale: 1.0
+  powerScale: 0.25
   controlFrequencyInv: 2
   stateInit: "Hybrid"
   hybridInitProb: 0.5
@@ -21,9 +21,9 @@ env:
   maxPushVelXy: 0.04
 
   # COM is randomized only once for each actor, but not at each reset
-  randomizeCom: True
+  randomizeCom: False
   comRandomizeRange: [-0.05, 0.05]
-  randomizeTorques: True
+  randomizeTorques: False
   torqueMultiplierRange: [0.9, 1.9]
 
   customControl: True
@@ -68,12 +68,12 @@ env:
     useAverageVelocities: True
 
   randomCommandVelocityRanges:
-    linear_x: [-0.3, 0.4] # min max [m/s]
-    linear_y: [-0.3, 0.3]   # min max [m/s]
+    linear_x: [-0.2, 0.3] # min max [m/s]
+    linear_y: [-0.2, 0.2]   # min max [m/s]
     yaw: [-0.3, 0.3]          # min max [rad/s]
 
   # randomCommandVelocityRanges:
-  #   linear_x: [0.4, 0.4] # min max [m/s]
+  #   linear_x: [0.3, 0.3] # min max [m/s]
   #   linear_y: [0, 0]   # min max [m/s]
   #   yaw: [0, 0]          # min max [rad/s]
   
