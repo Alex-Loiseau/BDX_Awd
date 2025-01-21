@@ -708,11 +708,11 @@ class Duckling(BaseTask):
         if self.custom_control: # custom position control
             self.render()
             for _ in range(self.control_freq_inv):
-                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos)# - (self.d_gains * self._dof_vel)
+                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
                 if self.randomize_torques:
                     self.torques *= self.randomize_torques_factors
                 self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
-                self.torques -= (self.d_gains * self._dof_vel)
+                # self.torques -= (self.d_gains * self._dof_vel)
 
                 if self._mask_joint_values is not None:
                     self.torques[:, self._mask_joint_ids] = self._mask_joint_values
