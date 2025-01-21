@@ -22,7 +22,7 @@ env:
 
   # COM is randomized only once for each actor, but not at each reset
   randomizeCom: True
-  comRandomizeRange: [-0.05, 0.05]
+  comRandomizeRange: [-0.06, 0.06]
   randomizeTorques: True
   torqueMultiplierRange: [0.85, 1.15]
 
@@ -124,7 +124,7 @@ sim:
 
 
 task:
-  randomize: False
+  randomize: True
   randomization_params:
     frequency: 600   # Define how many environment steps between generating new randomizations
     observations:
@@ -132,7 +132,8 @@ task:
       operation: "additive"
       distribution: "gaussian"
     actions:
-      range: [0., .02]
+      # range: [0., .02]
+      range: [0., .00] # already randomized by torque
       operation: "additive"
       distribution: "gaussian"
     sim_params: 
@@ -147,7 +148,7 @@ task:
         color: True
         rigid_body_properties:
           mass: 
-            range: [0.8, 1.5]
+            range: [0.95, 1.05]
             operation: "scaling"
             distribution: "uniform"
             setup_only: True # Property will only be randomized once before simulation is started. See Domain Randomization Documentation for more info.
@@ -156,26 +157,26 @@ task:
         rigid_shape_properties:
           friction:
             num_buckets: 500
-            range: [0.7, 1.3]
+            range: [0.95, 1.05]
             operation: "scaling"
             distribution: "uniform"
             schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
           restitution:
-            range: [0., 0.7]
+            range: [0., 0.1]
             operation: "scaling"
             distribution: "uniform"
             schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
         dof_properties:
           damping: 
-            range: [0.8, 1.5]
+            range: [0.0, 0.0]
             operation: "scaling"
             distribution: "uniform"
             schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
           stiffness: 
-            range: [0.8, 1.5]
+            range: [0.0, 0.0]
             operation: "scaling"
             distribution: "uniform"
             schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
