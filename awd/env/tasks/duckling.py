@@ -548,7 +548,7 @@ class Duckling(BaseTask):
                 continue
 
             # for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
-            for prop_type in ["friction", "damping"]:
+            for prop_type in ["friction"]:
                 if self._dof_props_config[dof_name].get(prop_type, None) is not None:
                     dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type]
 
