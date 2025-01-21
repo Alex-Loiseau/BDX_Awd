@@ -15,14 +15,14 @@ env:
   numAMPObsSteps: 20
 
   pushRobots: True
-  pushStep: 300 #s
+  pushStep: 10 #s
   pushStepRandomRange: 80 # push works at pushStep +- pushStepRandomRange
   continousPushSteps: 10
-  maxPushVelXy: 0.03
+  maxPushVelXy: 0.05
 
   # COM is randomized only once for each actor, but not at each reset
   randomizeCom: True
-  comRandomizeRange: [-0.06, 0.06]
+  comRandomizeRange: [-0.07, 0.07]
   randomizeTorques: True
   torqueMultiplierRange: [0.85, 1.15]
 
