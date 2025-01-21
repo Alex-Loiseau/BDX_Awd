@@ -90,6 +90,8 @@ class Duckling(BaseTask):
         self.dt = self.control_freq_inv * sim_params.dt        
 
         self.common_t = 0
+        self.max_v = 0
+        self.min_v = 10000
         
         # get gym GPU state tensors
         #self.gym.refresh_actor_root_state_tensor(self.sim)
@@ -546,7 +548,7 @@ class Duckling(BaseTask):
                 continue
 
             # for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
-            for prop_type in ["friction"]:
+            for prop_type in ["friction", "damping"]:
                 if self._dof_props_config[dof_name].get(prop_type, None) is not None:
                     dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type]
 
@@ -689,8 +691,18 @@ class Duckling(BaseTask):
         # _, _, motion_dof_pos, _, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device))
         # self.actions[:, :] = motion_dof_pos - self._default_dof_pos
 
-        # self.actions[:, 3] = 3*np.sin(2*np.pi*0.1*self.common_t) - self._default_dof_pos[:, 3]
+        # self.actions[:, 4] = 4*(0.2*np.sin(2*np.pi*0.5*(self.common_t)) - self._default_dof_pos[:, 4])
         # self.actions[:, 14] = 3*np.sin(2*np.pi*0.1*self.common_t) - self._default_dof_pos[:, 14]
+
+        # v = self._dof_vel[:, 4].to('cpu').numpy()[0]
+        # if self.common_t > 2:
+        #     if v > self.max_v:
+        #         self.max_v = v
+
+        #     if v < self.min_v:
+        #         self.min_v = v
+        #     print("common t ", self.common_t)
+        #     print(f"min v : {np.around(self.min_v, 2)}, max v : {np.around(self.max_v, 2)}")
         # /DEBUG
 
         if self.custom_control: # custom position control
