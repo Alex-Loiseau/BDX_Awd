@@ -23,7 +23,7 @@ env:
   # COM is randomized only once for each actor, but not at each reset
   randomizeCom: True
   comRandomizeRange: [-0.07, 0.07]
-  randomizeTorques: False
+  randomizeTorques: True
   torqueMultiplierRange: [0.9, 1.1]
 
   customControl: True
