@@ -18,7 +18,7 @@ env:
   pushStep: 10 #s
   pushStepRandomRange: 80 # push works at pushStep +- pushStepRandomRange
   continousPushSteps: 10
-  maxPushVelXy: 0.1
+  maxPushVelXy: 0.2
 
   # COM is randomized only once for each actor, but not at each reset
   randomizeCom: True
