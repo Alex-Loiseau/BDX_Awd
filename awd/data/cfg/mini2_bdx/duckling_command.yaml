@@ -21,10 +21,10 @@ env:
   maxPushVelXy: 0.1
 
   # COM is randomized only once for each actor, but not at each reset
-  randomizeCom: False
+  randomizeCom: True
   comRandomizeRange: [-0.05, 0.05]
   randomizeTorques: False
-  torqueMultiplierRange: [0.85, 1.15]
+  torqueMultiplierRange: [0.9, 1.1]
 
   customControl: True
 
@@ -124,7 +124,7 @@ sim:
 
 
 task:
-  randomize: False
+  randomize: True
   randomization_params:
     frequency: 600   # Define how many environment steps between generating new randomizations
     observations:
