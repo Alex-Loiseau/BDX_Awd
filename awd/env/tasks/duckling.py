@@ -421,7 +421,7 @@ class Duckling(BaseTask):
         asset_options.max_linear_velocity = 100.0
         # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 3 effort)
         asset_options.default_dof_drive_mode = 3
-        # asset_options.fix_base_link = True
+        asset_options.fix_base_link = True
         motor_efforts = None
         duckling_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
         props = self._get_asset_properties()
@@ -687,11 +687,14 @@ class Duckling(BaseTask):
         self.actions = actions.to(self.device).clone()
 
         # DEBUG replay moves
-        # self.actions = torch.zeros_like(self.actions)
+        self.actions = torch.zeros_like(self.actions)
         # _, _, motion_dof_pos, _, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device))
         # self.actions[:, :] = motion_dof_pos - self._default_dof_pos
 
-        # self.actions[:, 4] = 4*(0.2*np.sin(2*np.pi*0.5*(self.common_t)) - self._default_dof_pos[:, 4])
+        A = 0.3
+        F = 2.0
+        joint_id = 2
+        self.actions[:, joint_id] = (1/self.power_scale)*(A*np.sin(2*np.pi*F*(self.common_t)))# - self._default_dof_pos[:, joint_id])
         # self.actions[:, 14] = 3*np.sin(2*np.pi*0.1*self.common_t) - self._default_dof_pos[:, 14]
 
         # v = self._dof_vel[:, 4].to('cpu').numpy()[0]
@@ -708,7 +711,8 @@ class Duckling(BaseTask):
         if self.custom_control: # custom position control
             self.render()
             for _ in range(self.control_freq_inv):
-                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
+                # self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self._dof_vel)
+                self.torques = self.p_gains*(self.actions*self.power_scale - self._dof_pos) - (self.d_gains * self._dof_vel)
                 if self.randomize_torques:
                     self.torques *= self.randomize_torques_factors
                 self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
@@ -783,9 +787,10 @@ class Duckling(BaseTask):
             if len(push_env_ids) > 0:
                 self._push_robots(push_env_ids)            
 
-        # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
-        # pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
-        
+        self.saved_obs.append(self.obs_buf[0].cpu().numpy())
+        pickle.dump(self.saved_obs, open("isaac_saved_obs.pkl", "wb"))
+        if len(self.saved_obs) > 1/self.dt * 10 : # record 10 seconds
+            exit()
         
         return
     

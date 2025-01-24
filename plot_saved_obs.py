@@ -60,7 +60,7 @@ for i in range(num_dofs):
     dof_poses.append([])
     actions.append([])
     for obs in obses:
-        dof_poses[i].append(obs[3 : 3 + 16][i] - isaac_init_pos[i])
+        dof_poses[i].append(obs[3 : 3 + 16][i])# - isaac_init_pos[i])
         actions[i].append(obs[-(16 + 3) : -3][i])
 
 # plot action vs dof pos
@@ -79,6 +79,11 @@ for i in range(nb_rows):
         axs[i, j].plot(dof_poses[i * nb_cols + j], label="dof_pos")
         axs[i, j].legend()
         axs[i, j].set_title(f"{isaac_joints_order[i * nb_cols + j]}")
+
+# set ylim between -1 and 2
+for ax in axs.flat:
+    ax.set_ylim([-1, 2])
+
 
 fig.suptitle(f"{args.data}")
 plt.show()
