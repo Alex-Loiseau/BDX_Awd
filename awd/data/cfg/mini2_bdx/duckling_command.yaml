@@ -21,7 +21,7 @@ env:
   maxPushVelXy: 0.1
 
   # COM is randomized only once for each actor, but not at each reset
-  randomizeCom: True
+  randomizeCom: False
   comRandomizeRange: [-0.05, 0.05]
   randomizeTorques: False
   torqueMultiplierRange: [0.9, 1.1]
@@ -81,7 +81,7 @@ env:
   #   yaw: [0, 0]          # min max [rad/s]
   
   terrain:
-    terrainType: trimesh # plane, or trimesh
+    terrainType: plane # plane, or trimesh
     staticFriction: 1.0 # [-]
     dynamicFriction: 1.0 # [-]
     restitution: 0. # [-]
@@ -127,7 +127,7 @@ sim:
 
 
 task:
-  randomize: True
+  randomize: False
   randomization_params:
     frequency: 600   # Define how many environment steps between generating new randomizations
     observations:
