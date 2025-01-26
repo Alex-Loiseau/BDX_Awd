@@ -215,15 +215,12 @@ class Duckling(BaseTask):
 
         self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
 
-
-        self.common_step_counter = 0
-        self._push_robots_flag = self.cfg["env"].get("pushRobots", False)
-        self._push_step_interval = self.cfg["env"].get("pushStep", 150)
-        self._push_step_range = self.cfg["env"].get("pushStepRandomRange", 80)
-        self._continou_push_steps = self.cfg["env"].get("continousPushSteps", 10)
-        self._push_step = torch.randint(self._push_step_interval-self._push_step_range, self._push_step_interval+self._push_step_range, (self.num_envs,), device=self.device)
+        self.push_robots_flag = self.cfg["env"].get("pushRobots", False)
+        self.continous_push_steps = self.cfg["env"].get("continousPushSteps", 10)
         self.max_push_vel = self.cfg["env"].get("maxPushVelXy", 0.5)
-        self._push_vels = torch_rand_float(-self.max_push_vel, self.max_push_vel, (self.num_envs, 2), device=self.device)  # lin vel x/y
+        self.push_vels = torch_rand_float(-self.max_push_vel, self.max_push_vel, (self.num_envs, 2), device=self.device)  # lin vel x/y
+        self.push_timer = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
+        self.push_every_n_seconds = self.cfg["env"].get("pushEveryNSeconds", 5.0)
 
         self.randomize_torques = self.cfg["env"].get("randomizeTorques", False)
         self.torque_multiplier_range = self.cfg["env"].get("torqueMultiplierRange", [0.85, 1.15])
@@ -301,8 +298,8 @@ class Duckling(BaseTask):
         self.last_actions[env_ids] = 0.
         self.actions[env_ids] = 0.
         self.avg_velocities[env_ids] = 0.
-        if self._push_robots_flag:
-            self._push_step[env_ids] = torch.randint(self._push_step_interval-self._push_step_range, self._push_step_interval+self._push_step_range, (len(env_ids),), device=self.device)
+        if self.push_robots_flag:
+            # self._push_step[env_ids] = torch.randint(self._push_step_interval-self._push_step_range, self._push_step_interval+self._push_step_range, (len(env_ids),), device=self.device)
             self._push_vels = torch_rand_float(-self.max_push_vel, self.max_push_vel, (self.num_envs, 2), device=self.device)  # lin vel x/y
         if self.randomize_torques:
             self.randomize_torques_factors[env_ids, :] = torch_rand_float(self.torque_multiplier_range[0], self.torque_multiplier_range[1], 
@@ -771,7 +768,6 @@ class Duckling(BaseTask):
 
     def post_physics_step(self):
         self.progress_buf += 1
-        self.common_step_counter += 1
         self.randomize_buf += 1
         self.common_t += self.dt
 
@@ -812,11 +808,12 @@ class Duckling(BaseTask):
             self._update_debug_viz()
 
         # push robots
-        if self._push_robots_flag:
-            push_mask = (self.progress_buf >= self._push_step) & ((self.progress_buf) <= (self._push_step + self._continou_push_steps))
-            push_env_ids = push_mask.nonzero(as_tuple=False).flatten()
-            if len(push_env_ids) > 0:
-                self._push_robots(push_env_ids)            
+        if self.push_robots_flag:
+            self.push_timer[:] += self.dt
+            envs_to_push = (self.push_timer > self.push_every_n_seconds).flatten().nonzero(as_tuple=False).flatten()
+            if len(envs_to_push) > 0:
+                self._push_robots(envs_to_push)
+                self.push_timer[envs_to_push] = 0
 
         # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
         # pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
@@ -840,7 +837,6 @@ class Duckling(BaseTask):
         """Random pushes the robots. Emulates an impulse by setting a randomized base velocity."""
         self._duckling_root_states[env_ids, 7:9] = self._push_vels[env_ids]
         self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self._root_states))
-        # print("PUSH", env_ids, self._push_vels[env_ids])
 
     def render(self, sync_frame_time=False):
         # if self.viewer:

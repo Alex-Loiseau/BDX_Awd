@@ -14,11 +14,15 @@ env:
   # hybridInitProb: 0
   numAMPObsSteps: 20
 
+  # ===
+  # I don't understand how this works. doesn't seem to do what I want
+  # pushStep: 3 #s
+  # pushStepRandomRange: 5 # push works at pushStep +- pushStepRandomRange
+  # ===
   pushRobots: True
-  pushStep: 3 #s
-  pushStepRandomRange: 80 # push works at pushStep +- pushStepRandomRange
-  continousPushSteps: 10
-  maxPushVelXy: 0.1
+  pushEveryNSeconds: 3 #s, push every N seconds
+  continousPushSteps: 10 # push 10 times
+  maxPushVelXy: 1.0
 
   # COM is randomized only once for each actor, but not at each reset
   randomizeCom: True
@@ -82,7 +86,7 @@ env:
   #   yaw: [0, 0]          # min max [rad/s]
   
   terrain:
-    terrainType: trimesh # plane, or trimesh
+    terrainType: plane # plane, or trimesh
     staticFriction: 1.0 # [-]
     dynamicFriction: 1.0 # [-]
     restitution: 0. # [-]
