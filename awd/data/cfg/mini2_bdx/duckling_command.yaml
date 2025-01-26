@@ -10,8 +10,8 @@ env:
   powerScale: 0.25
   controlFrequencyInv: 4
   stateInit: "Hybrid"
-  # hybridInitProb: 1.0
-  hybridInitProb: 0
+  hybridInitProb: 0.5
+  # hybridInitProb: 0
   numAMPObsSteps: 20
 
   pushRobots: False
