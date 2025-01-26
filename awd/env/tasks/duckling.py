@@ -84,7 +84,10 @@ class Duckling(BaseTask):
         self.cfg["headless"] = headless
                 
         self.randomize_com = self.cfg["env"].get("randomizeCom", False)
-        self.com_randomize_range = self.cfg["env"].get("comRandomizeRange", [-0.1, 0.1])
+        self.com_randomize_range = self.cfg["env"].get("comRandomizeRange", [-0.0, 0.0])
+
+        self.randomize_base_mass = self.cfg["env"].get("randomizeBaseMass", False)
+        self.mass_multiplier_range = self.cfg["env"].get("massMultiplierRange", [1.0, 1.0])
 
         super().__init__(cfg=self.cfg)
         
@@ -298,12 +301,14 @@ class Duckling(BaseTask):
         self.last_actions[env_ids] = 0.
         self.actions[env_ids] = 0.
         self.avg_velocities[env_ids] = 0.
+
         if self.push_robots_flag:
-            # self._push_step[env_ids] = torch.randint(self._push_step_interval-self._push_step_range, self._push_step_interval+self._push_step_range, (len(env_ids),), device=self.device)
             self._push_vels = torch_rand_float(-self.max_push_vel, self.max_push_vel, (self.num_envs, 2), device=self.device)  # lin vel x/y
+
         if self.randomize_torques:
             self.randomize_torques_factors[env_ids, :] = torch_rand_float(self.torque_multiplier_range[0], self.torque_multiplier_range[1], 
                                                                           (len(env_ids), self.num_actions), device=self.device)
+
         return
 
     def _create_ground_plane(self):
@@ -508,21 +513,31 @@ class Duckling(BaseTask):
         if (self._pd_control):
             self._build_pd_action_offset_scale()
         
-        if self.randomize_com:
+        if self.randomize_com or self.randomize_base_mass:
             self.randomize_com_values = torch_rand_float(self.com_randomize_range[0], self.com_randomize_range[1], (self.num_envs, 3), device=self.device)
+            self.mass_factors = torch_rand_float(self.mass_multiplier_range[0], self.mass_multiplier_range[1], (self.num_envs, 1), device=self.device)
+
             for i in range(self.num_envs):
                 body_props = self.gym.get_actor_rigid_body_properties(self.envs[i], self.duckling_handles[i])
-                body_props[0].com += gymapi.Vec3(
-                    self.randomize_com_values[i, 0],
-                    self.randomize_com_values[i, 1],
-                    self.randomize_com_values[i, 2],
-                )
+
+                if self.randomize_com:
+                    body_props[0].com += gymapi.Vec3(
+                        self.randomize_com_values[i, 0],
+                        self.randomize_com_values[i, 1],
+                        self.randomize_com_values[i, 2],
+                    )
+                
+                if self.randomize_base_mass:
+                    body_props[0].mass *= self.mass_factors[i]
+
+
                 self.gym.set_actor_rigid_body_properties(
                     self.envs[i],
                     self.duckling_handles[i],
                     body_props,
                     recomputeInertia=True,
                 )
+
         
         # object_rb_props = self.gym.get_actor_rigid_body_properties(self.envs[0], self.duckling_handles[0])
         # masses = [prop.mass for prop in object_rb_props]
