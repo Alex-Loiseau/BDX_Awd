@@ -30,6 +30,7 @@ env:
   imuDelay: 0.05 # s, 50ms
 
   customControl: True
+  useCustomDofVels : True
 
   localRootObs: True
   keyBodies: ["left_foot", "right_foot"]

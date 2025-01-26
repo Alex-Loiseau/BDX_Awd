@@ -97,10 +97,12 @@ class Duckling(BaseTask):
             # we store the projected gravities, so the buffer is of shape [num_envs, buffer_size, 3]
             self.imu_delay_buffer = torch.zeros(self.num_envs, self.imu_delay_buffer_size, 3, dtype=torch.float, device=self.device, requires_grad=False)
 
-        self.custom_dof_vel = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
-        self.last_dof_pos = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
-        self.custom_dof_vel_decimation = 2
-        self.custom_dof_vel_counter = 0
+        self.use_custom_dof_vels = self.cfg["env"].get("useCustomDofVels", False)
+        if self.use_custom_dof_vels:
+            self.custom_dof_vel = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
+            self.last_dof_pos = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
+            self.custom_dof_vel_decimation = 2
+            self.custom_dof_vel_counter = 0
 
         self.common_t = 0
         self.max_v = 0
@@ -663,7 +665,7 @@ class Duckling(BaseTask):
                                                 self._rigid_body_rot[:, 0, :],
                                                 self._rigid_body_vel[:, 0, :],
                                                 self._rigid_body_ang_vel[:, 0, :],
-                                                self._dof_pos, self.custom_dof_vel, key_body_pos,
+                                                self._dof_pos, self.get_dof_vels(), key_body_pos,
                                                 self._local_root_obs, self._root_height_obs, 
                                                 self._dof_obs_size, self._dof_offsets, self._dof_axis_array, 
                                                 self.get_projected_gravity(), foot_contacts, self.actions, self.last_actions)
@@ -673,7 +675,7 @@ class Duckling(BaseTask):
                                                 self._rigid_body_rot[env_ids][:, 0, :],
                                                 self._rigid_body_vel[env_ids][:, 0, :],
                                                 self._rigid_body_ang_vel[env_ids][:, 0, :],
-                                                self._dof_pos[env_ids], self.custom_dof_vel[env_ids], key_body_pos[env_ids],
+                                                self._dof_pos[env_ids], self.get_dof_vels()[env_ids], key_body_pos[env_ids],
                                                 self._local_root_obs, self._root_height_obs, 
                                                 self._dof_obs_size, self._dof_offsets, self._dof_axis_array, 
                                                 self.get_projected_gravity()[env_ids], foot_contacts[env_ids], self.actions[env_ids], self.last_actions[env_ids])        
@@ -721,7 +723,7 @@ class Duckling(BaseTask):
         if self.custom_control: # custom position control
             self.render()
             for _ in range(self.control_freq_inv):
-                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self.custom_dof_vel)
+                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self.get_dof_vels())
                 if self.randomize_torques:
                     self.torques *= self.randomize_torques_factors
                 self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
@@ -735,17 +737,18 @@ class Duckling(BaseTask):
                     self.gym.fetch_results(self.sim, True)
                 self.gym.refresh_dof_state_tensor(self.sim)
 
-                # compute custom speed
-                self.custom_dof_vel_counter += 1
-                if self.custom_dof_vel_counter % self.custom_dof_vel_decimation == 0:
-                    self.custom_dof_vel = (self._dof_pos - self.last_dof_pos) / (self.sim_params.dt * self.custom_dof_vel_decimation)
-                    self.last_dof_pos = self._dof_pos.clone()
+                if self.use_custom_dof_vels:
+                    # compute custom speed
+                    self.custom_dof_vel_counter += 1
+                    if self.custom_dof_vel_counter % self.custom_dof_vel_decimation == 0:
+                        self.custom_dof_vel = (self._dof_pos - self.last_dof_pos) / (self.sim_params.dt * self.custom_dof_vel_decimation)
+                        self.last_dof_pos = self._dof_pos.clone()
 
-                # sanity check:
-                # print(self._dof_vel[0, :])
-                # print(self.custom_dof_vel[0, :])
-                # print("DIFF : ", self._dof_vel[0, :] - self.custom_dof_vel[0, :])
-                # print("==")
+                    # sanity check:
+                    # print(self._dof_vel[0, :])
+                    # print(self.custom_dof_vel[0, :])
+                    # print("DIFF : ", self._dof_vel[0, :] - self.custom_dof_vel[0, :])
+                    # print("==")
 
         elif (self._pd_control): # isaac based position contol
             pd_tar = self._action_to_pd_targets(self.actions)
@@ -826,6 +829,12 @@ class Duckling(BaseTask):
             return self.imu_delay_buffer[:, -1, :]
         else:
             return self.projected_gravity
+
+    def get_dof_vels(self):
+        if self.use_custom_dof_vels:
+            return self.custom_dof_vel
+        else:
+            return self._dof_vel
 
     def _push_robots(self, env_ids):
         """Random pushes the robots. Emulates an impulse by setting a randomized base velocity."""
