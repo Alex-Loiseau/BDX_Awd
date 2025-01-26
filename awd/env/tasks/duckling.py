@@ -82,12 +82,20 @@ class Duckling(BaseTask):
         self.cfg["device_type"] = device_type
         self.cfg["device_id"] = device_id
         self.cfg["headless"] = headless
-        
+                
         self.randomize_com = self.cfg["env"].get("randomizeCom", False)
         self.com_randomize_range = self.cfg["env"].get("comRandomizeRange", [-0.1, 0.1])
+
         super().__init__(cfg=self.cfg)
         
         self.dt = self.control_freq_inv * sim_params.dt        
+
+        self.add_imu_delay = self.cfg["env"].get("addImuDelay", False)
+        if self.add_imu_delay:
+            self.imu_delay = self.cfg["env"].get("imuDelay", 0.0)
+            self.imu_delay_buffer_size = int(self.imu_delay / self.dt)
+            # we store the projected gravities, so the buffer is of shape [num_envs, buffer_size, 3]
+            self.imu_delay_buffer = torch.zeros(self.num_envs, self.imu_delay_buffer_size, 3, dtype=torch.float, device=self.device, requires_grad=False)
 
         self.common_t = 0
         self.max_v = 0
@@ -653,7 +661,7 @@ class Duckling(BaseTask):
                                                 self._dof_pos, self._dof_vel, key_body_pos,
                                                 self._local_root_obs, self._root_height_obs, 
                                                 self._dof_obs_size, self._dof_offsets, self._dof_axis_array, 
-                                                self.projected_gravity, foot_contacts, self.actions, self.last_actions)
+                                                self.get_projected_gravity(), foot_contacts, self.actions, self.last_actions)
         else:
             key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
             obs = compute_duckling_observations(self._rigid_body_pos[env_ids][:, 0, :],
@@ -663,7 +671,7 @@ class Duckling(BaseTask):
                                                 self._dof_pos[env_ids], self._dof_vel[env_ids], key_body_pos[env_ids],
                                                 self._local_root_obs, self._root_height_obs, 
                                                 self._dof_obs_size, self._dof_offsets, self._dof_axis_array, 
-                                                self.projected_gravity[env_ids], foot_contacts[env_ids], self.actions[env_ids], self.last_actions[env_ids])        
+                                                self.get_projected_gravity()[env_ids], foot_contacts[env_ids], self.actions[env_ids], self.last_actions[env_ids])        
         # obs = compute_duckling_observations_max(body_pos, body_rot, body_vel, body_ang_vel, self._local_root_obs,
         #                                         self._root_height_obs)
 
@@ -763,6 +771,12 @@ class Duckling(BaseTask):
 
         self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
 
+        if self.add_imu_delay:
+            # fill the imu_delay_buffer, first is latest, last is oldest
+            for i in range(self.imu_delay_buffer.shape[1]-1, 0, -1):
+                self.imu_delay_buffer[:, i, :] = self.imu_delay_buffer[:, i-1, :]
+            self.imu_delay_buffer[:, 0, :] = self.projected_gravity
+
         self._refresh_sim_tensors()
         self._compute_observations()
         self._compute_reward(self.actions)
@@ -786,9 +800,15 @@ class Duckling(BaseTask):
         # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
         # pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
         
-        
         return
-    
+
+    def get_projected_gravity(self):
+        # getter to handle the imu delay if set
+        if self.add_imu_delay:
+            return self.imu_delay_buffer[:, -1, :]
+        else:
+            return self.projected_gravity
+
     def _push_robots(self, env_ids):
         """Random pushes the robots. Emulates an impulse by setting a randomized base velocity."""
         self._duckling_root_states[env_ids, 7:9] = self._push_vels[env_ids]
