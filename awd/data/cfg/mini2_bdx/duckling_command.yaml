@@ -14,7 +14,7 @@ env:
   # hybridInitProb: 0
   numAMPObsSteps: 20
 
-  pushRobots: False
+  pushRobots: True
   pushStep: 3 #s
   pushStepRandomRange: 80 # push works at pushStep +- pushStepRandomRange
   continousPushSteps: 10
