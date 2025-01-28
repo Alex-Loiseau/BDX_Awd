@@ -163,5 +163,13 @@ for i in range(nb_rows):
         axs[i, j].plot([obs[i * nb_cols + j] for obs in obses])
         axs[i, j].set_title(obses_names[i * nb_cols + j])
 
+#set ylim between -5 and 5
+
+for ax in axs.flat:
+    ax.set_ylim([-5, 5])
+
+    
+
+
 fig.suptitle(f"{args.data}")
 plt.show()

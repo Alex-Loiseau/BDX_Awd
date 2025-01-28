@@ -32,7 +32,7 @@ for i in range(num_dofs):
     dof_voltages.append([])
     for j in range(len(voltages)):
         dof_voltages[i].append(voltages[j][i])
-    
+
 # plot voltage vs time
 
 nb_dofs = len(dof_voltages)
@@ -49,4 +49,3 @@ for i in range(nb_rows):
         axs[i, j].set_title(joints_order[i * nb_cols + j])
 
 plt.show()
-

@@ -733,16 +733,20 @@ class Duckling(BaseTask):
         # /DEBUG
 
         if self.custom_control: # custom position control
+            
             self.render()
+
+            if self._mask_joint_values is not None:
+                self.actions[:, self._mask_joint_ids] = self._mask_joint_values
+
             for _ in range(self.control_freq_inv):
+
                 self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self.get_dof_vels())
                 if self.randomize_torques:
                     self.torques *= self.randomize_torques_factors
                 self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
                 # self.torques -= (self.d_gains * self._dof_vel)
 
-                if self._mask_joint_values is not None:
-                    self.torques[:, self._mask_joint_ids] = self._mask_joint_values
                 self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
                 self.gym.simulate(self.sim)
                 if self.device == 'cpu':
@@ -824,8 +828,8 @@ class Duckling(BaseTask):
                 self._push_robots(envs_to_push)
                 self.push_timer[envs_to_push] = 0
 
-        # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
-        # pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
+        self.saved_obs.append(self.obs_buf[0].cpu().numpy())
+        pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
 
         return
 
