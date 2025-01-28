@@ -756,11 +756,8 @@ class Duckling(BaseTask):
                         self.custom_dof_vel = (self._dof_pos - self.last_dof_pos) / (self.sim_params.dt * self.custom_dof_vel_decimation)
                         self.last_dof_pos = self._dof_pos.clone()
 
-                    # sanity check:
-                    # print(self._dof_vel[0, :])
-                    # print(self.custom_dof_vel[0, :])
-                    # print("DIFF : ", self._dof_vel[0, :] - self.custom_dof_vel[0, :])
-                    # print("==")
+                self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
+
                 if self.add_imu_delay:
                     # fill the imu_delay_buffer, first is latest, last is oldest
                     for i in range(self.imu_delay_buffer.shape[1]-1, 0, -1):
@@ -805,8 +802,6 @@ class Duckling(BaseTask):
 
         # Compute average velocities for each environment
         self.avg_velocities = torch.mean(self.velocities_history_reshaped, dim=1)
-
-        self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
 
         self._refresh_sim_tensors()
         self._compute_observations()
