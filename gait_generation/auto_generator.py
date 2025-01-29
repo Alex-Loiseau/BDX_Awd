@@ -52,10 +52,10 @@ def main(bdx_type, n):
             json.dump(data, file, indent=4)
 
         if bdx_type in ["mini_bdx", "mini2_bdx"]:
-            subprocess.run(['python', "gait_generator.py", "--preset", f"{tmp_preset}", "--name", f"{i}", f"--{bdx_type.split('_')[0]}"])
+            subprocess.run(['python', "gait_generator.py", "--stand" , "--preset", f"{tmp_preset}", "--name", f"{i}", f"--{bdx_type.split('_')[0]}"])
         else:
             subprocess.run(['python', "gait_generator.py", "--preset", f"{tmp_preset}", "--name", f"{i}"])
-    
+
 
     speeds = []
     preset_names = []
@@ -69,23 +69,23 @@ def main(bdx_type, n):
             file_path = os.path.join(default_output_dir, filename)
             with open(file_path, 'r') as file:
                 data = json.load(file)
-                
+
             # Extract the relevant information
             placo_data = data.get("Placo", {})
             avg_x_vel = placo_data.get("avg_x_lin_vel", 0)
             avg_y_vel = placo_data.get("avg_y_lin_vel", 0)
             preset_name = placo_data.get("preset_name", "unknown")
-            
+
             # Calculate the total speed
             total_speed = np.sqrt(avg_x_vel**2 + avg_y_vel**2)
 
             print(total_speed, preset_name)
-            
+
 
         if (preset_name == 'slow' and total_speed > slow) or \
             (preset_name == 'medium' and (total_speed <= slow or total_speed > fast)) or \
             (preset_name == 'fast' and total_speed <= medium):
-        
+
             # delete the file
             os.remove(file_path)
             print(f"Deleted {file_path}")

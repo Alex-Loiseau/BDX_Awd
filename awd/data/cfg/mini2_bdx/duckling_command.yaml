@@ -27,16 +27,16 @@ env:
   randomizeBaseMass: True
   massMultiplierRange: [0.95, 1.05]
 
-  addImuDelay : True
+  addImuDelay: True
   imuDelay: 0.05 # s, 50ms
 
   customControl: True
-  useCustomDofVels : True
+  useCustomDofVels: True
 
   localRootObs: True
   keyBodies: ["left_foot", "right_foot"]
   contactBodies: ["foot_assembly", "foot_assembly_2"]
-  maskJoints: ['neck_pitch', 'head_pitch', 'head_yaw', "head_roll"]
+  maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
   # maskJoints: []
   maskJointRandomRange: [-0.5, 0.5]
   terminationHeight: -0.05
@@ -74,13 +74,13 @@ env:
 
   randomCommandVelocityRanges:
     linear_x: [-0.2, 0.3] # min max [m/s]
-    linear_y: [-0.2, 0.2]   # min max [m/s]
-    yaw: [-0.5, 0.5]          # min max [rad/s]
+    linear_y: [-0.2, 0.2] # min max [m/s]
+    yaw: [-0.5, 0.5] # min max [rad/s]
 
   # randomCommandVelocityRanges:
   #   linear_x: [0.3, 0.3] # min max [m/s]
-  #   linear_y: [0, 0]   # min max [m/s]
-  #   yaw: [0, 0]          # min max [rad/s]
+  #   linear_y: [0, 0] # min max [m/s]
+  #   yaw: [0, 0] # min max [rad/s]
 
   terrain:
     terrainType: plane # plane, or trimesh
@@ -113,7 +113,7 @@ sim:
   substeps: 1
   physx:
     num_threads: 4
-    solver_type: 1  # 0: pgs, 1: tgs
+    solver_type: 1 # 0: pgs, 1: tgs
     num_position_iterations: 4
     num_velocity_iterations: 1
     contact_offset: 0.02
@@ -127,11 +127,10 @@ sim:
     num_inner_iterations: 10
     warm_start: 0.25
 
-
 task:
   randomize: False
   randomization_params:
-    frequency: 600   # Define how many environment steps between generating new randomizations
+    frequency: 600 # Define how many environment steps between generating new randomizations
     observations:
       range: [0, .002] # range for the white noise
       operation: "additive"
@@ -146,7 +145,7 @@ task:
         range: [0, 0.05]
         operation: "additive"
         distribution: "gaussian"
-        schedule: "linear"  # "linear" will linearly interpolate between no rand and max rand
+        schedule: "linear" # "linear" will linearly interpolate between no rand and max rand
         schedule_steps: 100000
     actor_params:
       duckling:
@@ -157,7 +156,7 @@ task:
             operation: "scaling"
             distribution: "uniform"
             setup_only: True # Property will only be randomized once before simulation is started. See Domain Randomization Documentation for more info.
-            schedule: "linear"  # "linear" will linearly interpolate between no rand and max rand
+            schedule: "linear" # "linear" will linearly interpolate between no rand and max rand
             schedule_steps: 100000
         rigid_shape_properties:
           friction:
@@ -165,26 +164,26 @@ task:
             range: [0.95, 1.05]
             operation: "scaling"
             distribution: "uniform"
-            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule: "linear" # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
           restitution:
             range: [0., 0.1]
             operation: "scaling"
             distribution: "uniform"
-            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule: "linear" # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
         dof_properties:
           damping:
             range: [0.0, 0.0]
             operation: "scaling"
             distribution: "uniform"
-            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule: "linear" # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
           stiffness:
             range: [0.0, 0.0]
             operation: "scaling"
             distribution: "uniform"
-            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule: "linear" # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
           # lower:
           #   range: [0, 0.01]

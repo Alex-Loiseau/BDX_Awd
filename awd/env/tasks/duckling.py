@@ -733,7 +733,7 @@ class Duckling(BaseTask):
         # /DEBUG
 
         if self.custom_control: # custom position control
-            
+
             self.render()
 
             if self._mask_joint_values is not None:
@@ -850,6 +850,8 @@ class Duckling(BaseTask):
         """Random pushes the robots. Emulates an impulse by setting a randomized base velocity."""
         self._duckling_root_states[env_ids, 7:9] = self._push_vels[env_ids]
         self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self._root_states))
+        # if 0 in env_ids:
+        #     print("PUSH")
 
     def render(self, sync_frame_time=False):
         # if self.viewer:
