@@ -26,8 +26,8 @@ env:
   randomizeBaseMass: True
   massMultiplierRange: [0.95, 1.05]
 
-  addImuDelay: False
-  imuDelay: 0.05 # s, 50ms
+  addImuDelay: True
+  imuDelay: 0.02 # s, 20ms
 
   customControl: True
   useCustomDofVels: True
