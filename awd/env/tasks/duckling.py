@@ -575,7 +575,7 @@ class Duckling(BaseTask):
                 continue
 
             # for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
-            for prop_type in ["friction", "armature"]:
+            for prop_type in ["friction", "armature", "damping"]:
                 if self._dof_props_config[dof_name].get(prop_type, None) is not None:
                     dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type]
 
@@ -716,7 +716,7 @@ class Duckling(BaseTask):
         # DEBUG replay moves
         # self.actions = torch.zeros_like(self.actions)
         # _, _, motion_dof_pos, _, _, _, _, _ = self._motion_lib.get_motion_state(torch.tensor([0]).to(self.device), torch.tensor([self.common_t]).to(self.device))
-        # self.actions[:, :] = motion_dof_pos - self._default_dof_pos
+        # self.actions[:, :] = motion_dof_pos  - self._default_dof_pos
 
         # self.actions[:, 4] = 4*(0.2*np.sin(2*np.pi*0.5*(self.common_t)) - self._default_dof_pos[:, 4])
         # self.actions[:, 14] = 3*np.sin(2*np.pi*0.1*self.common_t) - self._default_dof_pos[:, 14]
@@ -828,8 +828,8 @@ class Duckling(BaseTask):
                 self._push_robots(envs_to_push)
                 self.push_timer[envs_to_push] = 0
 
-        self.saved_obs.append(self.obs_buf[0].cpu().numpy())
-        pickle.dump(self.saved_obs, open("saved_obs.pkl", "wb"))
+        # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
+        # pickle.dump(self.saved_obs, open("isaac_saved_obs.pkl", "wb"))
 
         return
 
