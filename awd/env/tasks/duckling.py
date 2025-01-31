@@ -430,7 +430,7 @@ class Duckling(BaseTask):
 
         asset_options = gymapi.AssetOptions()
         asset_options.density = 0.001
-        asset_options.armature = self._dof_props_config["left_hip_yaw"]["armature"]
+        # asset_options.armature = self._dof_props_config["left_hip_yaw"]["armature"]
         asset_options.thickness = 0.01
         asset_options.angular_damping = 0.00
         asset_options.linear_damping = 0.0
@@ -575,7 +575,7 @@ class Duckling(BaseTask):
                 continue
 
             # for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
-            for prop_type in ["friction"]:
+            for prop_type in ["friction", "armature"]:
                 if self._dof_props_config[dof_name].get(prop_type, None) is not None:
                     dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type]
 
