@@ -7,6 +7,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--data", type=str, required=False, default="saved_obs.pkl")
+parser.add_argument("--stand", action="store_true")
 args = parser.parse_args()
 
 
@@ -146,6 +147,13 @@ obses_names = [
     "command 1",
     "command 2",
 ]
+
+if args.stand:
+    obses_names += [
+        "command 3",
+        "command 4",
+        "command 5",
+    ]
 # Now plot all obs raw in a grid on a new plot
 
 # obses = [[56 obs at time 0], [56 obs at time 1], ...]
