@@ -741,11 +741,11 @@ class Duckling(BaseTask):
 
             for _ in range(self.control_freq_inv):
 
-                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos)# - (self.d_gains * self.get_dof_vels())
+                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self.get_dof_vels())
                 if self.randomize_torques:
                     self.torques *= self.randomize_torques_factors
                 self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
-                self.torques -= (self.d_gains * self.get_dof_vels())
+                # self.torques -= (self.d_gains * self.get_dof_vels())
 
                 self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
                 self.gym.simulate(self.sim)

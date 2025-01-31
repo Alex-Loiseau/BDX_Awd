@@ -27,8 +27,8 @@ env:
   randomizeBaseMass: True
   massMultiplierRange: [0.95, 1.05]
 
-  addImuDelay: False
-  imuDelay: 0.05 # s, 50ms
+  addImuDelay: True
+  imuDelay: 0.03 # s, 50ms
 
   customControl: True
   useCustomDofVels: True
@@ -36,8 +36,8 @@ env:
   localRootObs: True
   keyBodies: ["left_foot", "right_foot"]
   contactBodies: ["foot_assembly", "foot_assembly_2"]
-  # maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
-  maskJoints: []
+  maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
+  # maskJoints: []
   maskJointRandomRange: [-0.5, 0.5]
   terminationHeight: -0.05
   initHeight: 0.19
