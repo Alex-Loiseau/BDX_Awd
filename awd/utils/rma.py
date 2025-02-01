@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import utils.flatten as flatten
 
 
 class RMA(nn.Module):
@@ -13,6 +14,9 @@ class RMA(nn.Module):
         self.rma_history_size = rma_history_size
         self.num_obs = num_obs
         self.device = device
+
+        self.steps = 0
+        self.save_path = "./adaptation_module.pth"
 
         rma_latent_dim = self.rma_enc_layers[-1]
         rma_enc_dims = self.rma_enc_layers[:-1]
@@ -58,7 +62,7 @@ class RMA(nn.Module):
 
     def learn(self, rma_obs, rma_history):
         # regress rma encoder to adaptation module
-
+        self.steps += 1
         with torch.set_grad_enabled(True):  # not great, but will do
 
             # rma_obs shape : (num_envs, num_rma_obs)
@@ -78,3 +82,48 @@ class RMA(nn.Module):
                 adaptation_loss.backward()
                 print("loss", adaptation_loss)
                 self.adaptation_module_optimizer.step()
+
+        if self.steps % 500 == 0:
+            self.save(self.save_path)
+            self.export_onnx(f"adaptation_module_{self.steps}.onnx")
+
+    def save(self, path):
+        torch.save(self.adaptation_module.state_dict(), path)
+
+    def load(self, path):
+        self.adaptation_module.load_state_dict(torch.load(path))
+
+    def export_onnx(self, path):
+
+        class ModelWrapper(torch.nn.Module):
+            def __init__(self, model):
+                torch.nn.Module.__init__(self)
+                self._model = model
+
+            def forward(self, input_dict):
+                x = self._model.adaptation_module(input_dict["rma_history"])
+                return x
+
+        inputs = {
+            "rma_history": torch.randn(1, self.rma_history_size * self.num_obs).to(
+                self.device
+            )
+        }
+
+        with torch.no_grad():
+            adapter = flatten.TracingAdapter(
+                ModelWrapper(self), inputs, allow_non_tensor=True
+            )
+            traced = torch.jit.trace(
+                adapter, adapter.flattened_inputs, check_trace=False
+            )
+            # flattened_output = traced(*adapter.flattened_inputs)
+
+        torch.onnx.export(
+            traced,
+            *adapter.flattened_inputs,
+            path,
+            verbose=True,
+            input_names=["rma_history"],
+            output_names=["latent"],
+        )
