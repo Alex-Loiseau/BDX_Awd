@@ -14,6 +14,9 @@ env:
   hybridInitProb: 0.5
   # hybridInitProb: 0
   numAMPObsSteps: 20
+  rmaEnabled: True
+  numRmaObs: 22
+  rmaHistorySize: 50
 
   pushRobots: False
   pushEveryNSeconds: 3 #s, push every N seconds

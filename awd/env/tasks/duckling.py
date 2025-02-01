@@ -38,6 +38,7 @@ from isaacgym.torch_utils import *
 from isaacgym.terrain_utils import *
 
 from utils import torch_utils
+from utils.bdx.utils import get_scale_shift
 
 from env.tasks.base_task import BaseTask
 import pickle
@@ -99,12 +100,14 @@ class Duckling(BaseTask):
             self.imu_delay_buffer_size = int(self.max_imu_delay / self.sim_params.dt)
             # we store the projected gravities, so the buffer is of shape [num_envs, buffer_size, 3]
             self.imu_delay_buffer = torch.zeros(self.num_envs, self.imu_delay_buffer_size, 3, dtype=torch.float, device=self.device, requires_grad=False)
+            self.imu_random_index = 0
 
         self.randomize_action_delay = self.cfg["env"].get("randomizeActionDelay", False)
         if self.randomize_action_delay:
             self.max_action_delay = self.cfg["env"].get("maxActionDelay", 0.0)
             self.action_delay_buffer_size = int(self.max_action_delay / self.sim_params.dt)
             self.action_delay_buffer = torch.zeros(self.num_envs, self.action_delay_buffer_size, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
+            self.actions_random_index = 0
 
 
         self.use_custom_dof_vels = self.cfg["env"].get("useCustomDofVels", False)
@@ -236,6 +239,11 @@ class Duckling(BaseTask):
         self.torque_multiplier_range = self.cfg["env"].get("torqueMultiplierRange", [0.85, 1.15])
         if self.randomize_torques:
             self.randomize_torques_factors = torch.ones(self.num_envs, self.num_actions, device=self.device)
+
+        self.rma_enabled = self.cfg["env"].get("rmaEnabled", False)
+        if self.rma_enabled:
+            self.num_rma_obs = self.cfg["env"].get("numRmaObs", 0)
+            self.rma_history_size = self.cfg["env"].get("rmaHistorySize", 10)
 
         if self.viewer != None:
             self._init_camera()
@@ -676,6 +684,83 @@ class Duckling(BaseTask):
 
         return
 
+    # RMA
+    def get_privileged_dynamic_state(self):
+        if not self.rma_enabled:
+            return None
+
+        priv_dynamics_obs = torch.empty(self.num_envs, 0).to(self.device) 
+
+        if self.randomize_com:
+            com_scale, com_shift = get_scale_shift(self.com_randomize_range)
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((self.randomize_com_values - com_shift) * com_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if self.randomize_torques:
+            torque_scale, torque_shift = get_scale_shift(self.torque_multiplier_range)
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((self.randomize_torques_factors - torque_shift) * torque_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if self.randomize_base_mass:
+            mass_scale, mass_shift = get_scale_shift(self.mass_multiplier_range)
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((self.mass_factors - mass_shift) * mass_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if self.randomize_action_delay:
+            action_index_range = [0, self.action_delay_buffer_size]
+            actions_random_indices = torch.ones(self.num_envs, 1, device=self.device, dtype=torch.int64) * self.actions_random_index
+            
+            action_delay_scale, action_delay_shift = get_scale_shift(action_index_range)
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((actions_random_indices - action_delay_shift) * action_delay_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if self.randomize_imu_delay:
+            imu_index_range = [0, self.imu_delay_buffer_size]
+            imu_random_indices = torch.ones(self.num_envs, 1, device=self.device, dtype=torch.int64) * self.imu_random_index
+            imu_delay_scale, imu_delay_shift = get_scale_shift(imu_index_range)
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((imu_random_indices - imu_delay_shift) * imu_delay_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if priv_dynamics_obs.shape[-1] == 0:
+            return None
+
+        return priv_dynamics_obs
+
     def _compute_duckling_obs(self, env_ids=None):
         foot_contacts = self._contact_forces[:, self._contact_body_ids, 2] > 1.
         if (env_ids is None):
@@ -719,6 +804,8 @@ class Duckling(BaseTask):
 
     def pre_physics_step(self, actions):
         self.actions = actions.to(self.device).clone()
+
+        # print(self.get_privileged_dynamic_state().shape) # to get numRmaObs
 
         # DEBUG replay moves
         # self.actions = torch.zeros_like(self.actions)
@@ -849,16 +936,16 @@ class Duckling(BaseTask):
     def get_projected_gravity(self):
         if self.randomize_imu_delay:
             # same index for all envs for now
-            random_index = torch.randint(0, self.imu_delay_buffer_size, (1,), device=self.device)
-            return self.imu_delay_buffer[:, random_index[0], :]
+            self.imu_random_index = torch.randint(0, self.imu_delay_buffer_size, (1,), device=self.device)
+            return self.imu_delay_buffer[:, self.imu_random_index[0], :]
         else:
             return self.projected_gravity
 
     def get_actions(self):
         if self.randomize_action_delay:
             # same index for all envs for now
-            random_index = torch.randint(0, self.action_delay_buffer_size, (1,), device=self.device)
-            return self.action_delay_buffer[:, random_index[0], :]
+            self.actions_random_index = torch.randint(0, self.action_delay_buffer_size, (1,), device=self.device)
+            return self.action_delay_buffer[:, self.actions_random_index[0], :]
         else:
             return self.actions
 

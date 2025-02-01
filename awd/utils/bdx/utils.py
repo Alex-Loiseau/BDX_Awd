@@ -221,3 +221,7 @@ def quaternion_slerp(q1, q2, t, epsilon=1e-6):
 
     return result
 
+def get_scale_shift(range):
+    scale = 2.0 / (range[1] - range[0])
+    shift = (range[1] + range[0]) / 2.0
+    return scale, shift
