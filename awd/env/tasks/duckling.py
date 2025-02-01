@@ -93,10 +93,10 @@ class Duckling(BaseTask):
 
         self.dt = self.control_freq_inv * sim_params.dt
 
-        self.add_imu_delay = self.cfg["env"].get("addImuDelay", False)
-        if self.add_imu_delay:
-            self.imu_delay = self.cfg["env"].get("imuDelay", 0.0)
-            self.imu_delay_buffer_size = int(self.imu_delay / self.sim_params.dt)
+        self.randomize_imu_delay = self.cfg["env"].get("randomizeImuDelay", False)
+        if self.randomize_imu_delay:
+            self.max_imu_delay = self.cfg["env"].get("maxImuDelay", 0.0)
+            self.imu_delay_buffer_size = int(self.max_imu_delay / self.sim_params.dt)
             # we store the projected gravities, so the buffer is of shape [num_envs, buffer_size, 3]
             self.imu_delay_buffer = torch.zeros(self.num_envs, self.imu_delay_buffer_size, 3, dtype=torch.float, device=self.device, requires_grad=False)
 
@@ -769,7 +769,7 @@ class Duckling(BaseTask):
 
                 self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
 
-                if self.add_imu_delay:
+                if self.randomize_imu_delay:
                     # fill the imu_delay_buffer, first is latest, last is oldest
                     for i in range(self.imu_delay_buffer.shape[1]-1, 0, -1):
                         self.imu_delay_buffer[:, i, :] = self.imu_delay_buffer[:, i-1, :]
@@ -848,8 +848,9 @@ class Duckling(BaseTask):
 
     def get_projected_gravity(self):
         # getter to handle the imu delay if set
-        if self.add_imu_delay:
-            return self.imu_delay_buffer[:, -1, :]
+        if self.randomize_imu_delay:
+            random_index = torch.randint(0, self.imu_delay_buffer_size, (1,), device=self.device)
+            return self.imu_delay_buffer[:, random_index[0], :]
         else:
             return self.projected_gravity
 

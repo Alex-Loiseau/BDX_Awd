@@ -30,8 +30,9 @@ env:
   randomizeActionDelay: True
   maxActionDelay: 0.05 #s
 
-  addImuDelay: True
-  imuDelay: 0.05 # s, 50ms
+  randomizeImuDelay: True
+  # addImuDelay: True
+  maxImuDelay: 0.05 # s, 50ms
 
   customControl: True
   useCustomDofVels: True
