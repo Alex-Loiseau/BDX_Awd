@@ -27,6 +27,8 @@ env:
   torqueMultiplierRange: [0.95, 1.05]
   randomizeBaseMass: True
   massMultiplierRange: [0.95, 1.05]
+  randomizeActionDelay: True
+  maxActionDelay: 0.05 #s
 
   addImuDelay: True
   imuDelay: 0.05 # s, 50ms

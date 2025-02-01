@@ -100,6 +100,13 @@ class Duckling(BaseTask):
             # we store the projected gravities, so the buffer is of shape [num_envs, buffer_size, 3]
             self.imu_delay_buffer = torch.zeros(self.num_envs, self.imu_delay_buffer_size, 3, dtype=torch.float, device=self.device, requires_grad=False)
 
+        self.randomize_action_delay = self.cfg["env"].get("randomizeActionDelay", False)
+        if self.randomize_action_delay:
+            self.max_action_delay = self.cfg["env"].get("maxActionDelay", 0.0)
+            self.action_delay_buffer_size = int(self.max_action_delay / self.sim_params.dt)
+            self.action_delay_buffer = torch.zeros(self.num_envs, self.action_delay_buffer_size, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
+
+
         self.use_custom_dof_vels = self.cfg["env"].get("useCustomDofVels", False)
         if self.use_custom_dof_vels:
             self.custom_dof_vel = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
@@ -680,7 +687,7 @@ class Duckling(BaseTask):
                                                 self._dof_pos, self.get_dof_vels(), key_body_pos,
                                                 self._local_root_obs, self._root_height_obs,
                                                 self._dof_obs_size, self._dof_offsets, self._dof_axis_array,
-                                                self.get_projected_gravity(), foot_contacts, self.actions, self.last_actions)
+                                                self.get_projected_gravity(), foot_contacts, self.get_actions(), self.last_actions)
         else:
             key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
             obs = compute_duckling_observations(self._rigid_body_pos[env_ids][:, 0, :],
@@ -690,7 +697,7 @@ class Duckling(BaseTask):
                                                 self._dof_pos[env_ids], self.get_dof_vels()[env_ids], key_body_pos[env_ids],
                                                 self._local_root_obs, self._root_height_obs,
                                                 self._dof_obs_size, self._dof_offsets, self._dof_axis_array,
-                                                self.get_projected_gravity()[env_ids], foot_contacts[env_ids], self.actions[env_ids], self.last_actions[env_ids])
+                                                self.get_projected_gravity()[env_ids], foot_contacts[env_ids], self.get_actions()[env_ids], self.last_actions[env_ids])
         # obs = compute_duckling_observations_max(body_pos, body_rot, body_vel, body_ang_vel, self._local_root_obs,
         #                                         self._root_height_obs)
 
@@ -741,7 +748,7 @@ class Duckling(BaseTask):
 
             for _ in range(self.control_freq_inv):
 
-                self.torques = self.p_gains*(self.actions*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self.get_dof_vels())
+                self.torques = self.p_gains*(self.get_actions()*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self.get_dof_vels())
                 if self.randomize_torques:
                     self.torques *= self.randomize_torques_factors
                 self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
@@ -767,6 +774,12 @@ class Duckling(BaseTask):
                     for i in range(self.imu_delay_buffer.shape[1]-1, 0, -1):
                         self.imu_delay_buffer[:, i, :] = self.imu_delay_buffer[:, i-1, :]
                     self.imu_delay_buffer[:, 0, :] = self.projected_gravity
+
+                if self.randomize_action_delay:
+                    for i in range(self.action_delay_buffer.shape[1]-1, 0, -1):
+                        self.action_delay_buffer[:, i, :] = self.action_delay_buffer[:, i-1, :]
+                    self.action_delay_buffer[:, 0, :] = self.actions
+
 
         elif (self._pd_control): # isaac based position contol
             pd_tar = self._action_to_pd_targets(self.actions)
@@ -809,10 +822,10 @@ class Duckling(BaseTask):
 
         self._refresh_sim_tensors()
         self._compute_observations()
-        self._compute_reward(self.actions)
+        self._compute_reward(self.get_actions())
         self._compute_reset()
 
-        self.last_actions[:] = self.actions[:]
+        self.last_actions[:] = self.get_actions()
 
         self.extras["terminate"] = self._terminate_buf
 
@@ -839,6 +852,14 @@ class Duckling(BaseTask):
             return self.imu_delay_buffer[:, -1, :]
         else:
             return self.projected_gravity
+
+    def get_actions(self):
+        if self.randomize_action_delay:
+            # same index for all envs for now
+            random_index = torch.randint(0, self.action_delay_buffer_size, (1,), device=self.device)
+            return self.action_delay_buffer[:, random_index[0], :]
+        else:
+            return self.actions
 
     def get_dof_vels(self):
         if self.use_custom_dof_vels:
