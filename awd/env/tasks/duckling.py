@@ -29,6 +29,7 @@
 import numpy as np
 import os
 import torch
+import torch.nn as nn
 import yaml
 import xml.etree.ElementTree as ET
 
@@ -240,10 +241,52 @@ class Duckling(BaseTask):
         if self.randomize_torques:
             self.randomize_torques_factors = torch.ones(self.num_envs, self.num_actions, device=self.device)
 
+        # RMA
         self.rma_enabled = self.cfg["env"].get("rmaEnabled", False)
         if self.rma_enabled:
             self.num_rma_obs = self.cfg["env"].get("numRmaObs", 0)
             self.rma_history_size = self.cfg["env"].get("rmaHistorySize", 10)
+            self.rma_enc_layers = self.cfg["env"].get("rmaEncLayers", 1)
+
+            # (num_envs, hist_size, num_obs + 3) # commands
+            self.rma_obs_history_buffer = torch.zeros(self.num_envs, self.rma_history_size, self._num_obs + 3, device=self.device, requires_grad=False)
+
+            rma_latent_dim = self.rma_enc_layers[-1]
+            rma_enc_dims = self.rma_enc_layers[:-1]
+
+            # RMA encoder
+            self.rma_encoder = None
+            activation = nn.ELU()
+            rma_enc_layers = []
+            rma_enc_layers.append(nn.Linear(self.num_rma_obs, rma_enc_dims[0]))
+            rma_enc_layers.append(activation)
+            for l in range(len(rma_enc_dims)):
+                if l == len(rma_enc_dims) - 1:
+                    rma_enc_layers.append(nn.Linear(rma_enc_dims[l], rma_latent_dim))
+                else:
+                    rma_enc_layers.append(
+                        nn.Linear(rma_enc_dims[l], rma_enc_dims[l + 1])
+                    )
+                    rma_enc_layers.append(activation)
+            self.rma_encoder = nn.Sequential(*rma_enc_layers)
+            print(f"Priv RMA MLP: {self.rma_encoder}")
+
+            # adaptation module
+            self.adaptation_module = None
+            adapt_enc_layers = []
+            adapt_enc_layers.append(nn.Linear(self.rma_history_size, rma_enc_dims[0]))
+            adapt_enc_layers.append(activation)
+            for l in range(len(rma_enc_dims)):
+                if l == len(rma_enc_dims) - 1:
+                    adapt_enc_layers.append(nn.Linear(rma_enc_dims[l], rma_latent_dim))
+                else:
+                    adapt_enc_layers.append(
+                        nn.Linear(rma_enc_dims[l], rma_enc_dims[l + 1])
+                    )
+                    adapt_enc_layers.append(activation)
+            self.adaptation_module = nn.Sequential(*adapt_enc_layers)
+            print(f"Adaptation MLP: {self.adaptation_module}")
+
 
         if self.viewer != None:
             self._init_camera()
@@ -927,6 +970,14 @@ class Duckling(BaseTask):
             if len(envs_to_push) > 0:
                 self._push_robots(envs_to_push)
                 self.push_timer[envs_to_push] = 0
+
+        # RMA
+        # WARNING Most recent is first
+        # DON'T FORGET
+        if self.rma_enabled:
+            for i in range(self.rma_history_size-1, 0, -1):
+                self.rma_obs_history_buffer[:, i, :] = self.rma_obs_history_buffer[:, i-1, :]
+            self.rma_obs_history_buffer[:, 0, :] = self.obs_buf
 
         # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
         # pickle.dump(self.saved_obs, open("isaac_saved_obs.pkl", "wb"))

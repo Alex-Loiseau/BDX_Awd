@@ -17,6 +17,7 @@ env:
   rmaEnabled: True
   numRmaObs: 22
   rmaHistorySize: 50
+  rmaEncLayers: [256, 128, 18]
 
   pushRobots: False
   pushEveryNSeconds: 3 #s, push every N seconds
