@@ -78,6 +78,12 @@ class Duckling(BaseTask):
         self._mask_joint_random_range = self.cfg["env"].get("maskJointRandomRange", [0.0, 0.0])
         self._setup_character_props(key_bodies)
 
+        self.rma_enabled = self.cfg["env"].get("rmaEnabled", False)
+        if self.rma_enabled:
+            self.num_rma_obs = self.cfg["env"].get("numRmaObs", 0)
+            self.rma_history_size = self.cfg["env"].get("rmaHistorySize", 10)
+            self.rma_enc_layers = self.cfg["env"].get("rmaEncLayers", 1)
+
         self.cfg["env"]["numObservations"] = self.get_obs_size()
         self.cfg["env"]["numActions"] = self.get_action_size()
 
@@ -242,16 +248,15 @@ class Duckling(BaseTask):
             self.randomize_torques_factors = torch.ones(self.num_envs, self.num_actions, device=self.device)
 
         # RMA
-        self.rma_enabled = self.cfg["env"].get("rmaEnabled", False)
         if self.rma_enabled:
-            self.num_rma_obs = self.cfg["env"].get("numRmaObs", 0)
-            self.rma_history_size = self.cfg["env"].get("rmaHistorySize", 10)
-            self.rma_enc_layers = self.cfg["env"].get("rmaEncLayers", 1)
-
 
             total_num_obs = self._num_obs + 3
+
+            # rma obs buf is the same as self.obs_buf, but without the concatenated rma latent state
+            self.rma_obs_buf = torch.zeros(self.num_envs, total_num_obs, dtype=torch.float, device=self.device)
+
             # (num_envs, hist_size, num_obs + 3) # commands
-            self.rma_obs_history_buffer = torch.zeros(self.num_envs, self.rma_history_size, total_num_obs, device=self.device, requires_grad=False)
+            self.rma_obs_history_buffer = torch.zeros(self.num_envs, self.rma_history_size, total_num_obs, device=self.device)
 
             self.rma = RMA(self.rma_enc_layers, self.num_rma_obs, self.rma_history_size, total_num_obs, self.device)
 
@@ -264,7 +269,7 @@ class Duckling(BaseTask):
         return
 
     def get_obs_size(self):
-        return self._num_obs
+        return self._num_obs + self.rma_enabled * self.rma_enc_layers[-1]
 
     def get_action_size(self):
         return self._num_actions
@@ -686,13 +691,25 @@ class Duckling(BaseTask):
     def _compute_observations(self, env_ids=None):
         obs = self._compute_duckling_obs(env_ids)
 
-        # TODO
+        rma_encoder_state = self.get_rma_encoder_state()
+        if rma_encoder_state is None:
+            rma_encoder_state = torch.empty(0).to(self.device)
         if (env_ids is None):
-            self.obs_buf[:] = obs
+            self.rma_obs_buf[:] = obs
+            self.obs_buf[:] = torch.cat((obs, rma_encoder_state))
         else:
-            self.obs_buf[env_ids] = obs
+            self.rma_obs_buf[env_ids] = obs
+            self.obs_buf[env_ids] = torch.cat((obs, rma_encoder_state))
+
+        print("rma encoder state", rma_encoder_state)
 
         return
+
+    def get_rma_encoder_state(self):
+        if not self.rma_enabled:
+            return None
+        
+        return self.rma.rma_encoder(self.get_privileged_dynamic_state())
 
     # RMA
     def get_privileged_dynamic_state(self):
@@ -944,7 +961,7 @@ class Duckling(BaseTask):
         if self.rma_enabled:
             for i in range(self.rma_history_size-1, 0, -1):
                 self.rma_obs_history_buffer[:, i, :] = self.rma_obs_history_buffer[:, i-1, :]
-            self.rma_obs_history_buffer[:, 0, :] = self.obs_buf
+            self.rma_obs_history_buffer[:, 0, :] = self.rma_obs_buf
 
             self.rma.learn(self.get_privileged_dynamic_state(), self.rma_obs_history_buffer)
 

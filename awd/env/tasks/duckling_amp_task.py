@@ -91,10 +91,21 @@ class DucklingAMPTask(duckling_amp.DucklingAMP):
         else:
             obs = duckling_obs
 
-        if (env_ids is None):
-            self.obs_buf[:] = obs
+        if not self.rma_enabled:
+            if (env_ids is None):
+                self.obs_buf[:] = obs
+            else:
+                self.obs_buf[env_ids] = obs
         else:
-            self.obs_buf[env_ids] = obs
+            rma_encoder_state = self.get_rma_encoder_state()
+            if (env_ids is None):
+                self.rma_obs_buf[:] = obs
+                self.obs_buf[:] = torch.cat((obs, rma_encoder_state), dim=1)
+            else:
+                self.rma_obs_buf[env_ids] = obs
+                self.obs_buf[env_ids] = torch.cat((obs, rma_encoder_state), dim=1) # HERE
+                # RuntimeError: Sizes of tensors must match except in dimension 1. Expected size 3 but got size 512 for tensor number 1 in the list.
+
         return
 
     def _compute_task_obs(self, env_ids=None):

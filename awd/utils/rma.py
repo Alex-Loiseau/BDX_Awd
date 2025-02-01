@@ -69,6 +69,8 @@ class RMA:
             with torch.no_grad():
                 adaptation_target = self.rma_encoder(rma_obs)
             adaptation_loss = F.mse_loss(adaptation_pred, adaptation_target)
+            adaptation_loss.requires_grad = True
+
 
             self.adaptation_module_optimizer.zero_grad()
             adaptation_loss.backward()
