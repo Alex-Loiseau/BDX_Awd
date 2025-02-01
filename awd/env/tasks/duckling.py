@@ -434,8 +434,8 @@ class Duckling(BaseTask):
         asset_options.thickness = 0.01
         asset_options.angular_damping = 0.00
         asset_options.linear_damping = 0.0
-        asset_options.max_angular_velocity = self._dof_props_config["left_hip_yaw"]["velocity"]
-        asset_options.max_linear_velocity = 100.0
+        asset_options.max_angular_velocity = 1000.0
+        asset_options.max_linear_velocity = 1000.0
         # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 3 effort)
         asset_options.default_dof_drive_mode = 3
         # asset_options.fix_base_link = True

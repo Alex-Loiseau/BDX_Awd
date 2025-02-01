@@ -7,6 +7,7 @@ env:
   enableDebugVis: False
 
   pdControl: False
+  # powerScale: 1.0
   powerScale: 0.25
   controlFrequencyInv: 4
   stateInit: "Hybrid"
@@ -28,7 +29,7 @@ env:
   massMultiplierRange: [0.95, 1.05]
 
   addImuDelay: True
-  imuDelay: 0.03 # s, 50ms
+  imuDelay: 0.05 # s, 50ms
 
   customControl: True
   useCustomDofVels: True
@@ -40,8 +41,8 @@ env:
   # maskJoints: []
   maskJointRandomRange: [-0.5, 0.5]
   terminationHeight: -0.05
-  # initHeight: 0.19
-  initHeight: 0.4
+  initHeight: 0.19
+  # initHeight: 0.4
   enableEarlyTermination: True
   enableTaskObs: True
   randomizeMaskJoints: True
