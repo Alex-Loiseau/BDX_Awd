@@ -80,7 +80,8 @@ class RMA(nn.Module):
 
                 self.adaptation_module_optimizer.zero_grad()
                 adaptation_loss.backward()
-                print("loss", adaptation_loss)
+                if self.steps % 100 == 0:
+                    print("loss", adaptation_loss)
                 self.adaptation_module_optimizer.step()
 
         if self.steps % 500 == 0:
