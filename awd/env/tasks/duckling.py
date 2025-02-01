@@ -847,8 +847,8 @@ class Duckling(BaseTask):
         return
 
     def get_projected_gravity(self):
-        # getter to handle the imu delay if set
         if self.randomize_imu_delay:
+            # same index for all envs for now
             random_index = torch.randint(0, self.imu_delay_buffer_size, (1,), device=self.device)
             return self.imu_delay_buffer[:, random_index[0], :]
         else:

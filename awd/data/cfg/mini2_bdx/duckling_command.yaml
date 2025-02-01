@@ -22,16 +22,14 @@ env:
 
   # COM and mass are randomized only once for each actor, but not at each reset
   randomizeCom: True
-  comRandomizeRange: [-0.05, 0.05]
+  comRandomizeRange: [-0.05, 0.05] # kg
   randomizeTorques: True
   torqueMultiplierRange: [0.95, 1.05]
   randomizeBaseMass: True
   massMultiplierRange: [0.95, 1.05]
   randomizeActionDelay: True
-  maxActionDelay: 0.05 #s
-
+  maxActionDelay: 0.05 # s, 50ms
   randomizeImuDelay: True
-  # addImuDelay: True
   maxImuDelay: 0.05 # s, 50ms
 
   customControl: True
