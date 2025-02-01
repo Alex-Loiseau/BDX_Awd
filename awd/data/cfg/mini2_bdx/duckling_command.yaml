@@ -20,14 +20,14 @@ env:
   maxPushVelXy: 0.5
 
   # COM and mass are randomized only once for each actor, but not at each reset
-  randomizeCom: False
+  randomizeCom: True
   comRandomizeRange: [-0.05, 0.05]
-  randomizeTorques: False
+  randomizeTorques: True
   torqueMultiplierRange: [0.95, 1.05]
-  randomizeBaseMass: False
+  randomizeBaseMass: True
   massMultiplierRange: [0.95, 1.05]
 
-  addImuDelay: False
+  addImuDelay: True
   imuDelay: 0.03 # s, 50ms
 
   customControl: True
@@ -78,7 +78,7 @@ env:
     yaw: [-0.5, 0.5] # min max [rad/s]
 
   # randomCommandVelocityRanges:
-  #   linear_x: [0.3, 0.3] # min max [m/s]
+  #   linear_x: [0.1, 0.3] # min max [m/s]
   #   linear_y: [0, 0] # min max [m/s]
   #   yaw: [0, 0] # min max [rad/s]
 
