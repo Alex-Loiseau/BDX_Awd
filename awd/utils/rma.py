@@ -84,9 +84,9 @@ class RMA(nn.Module):
                     print("loss", adaptation_loss)
                 self.adaptation_module_optimizer.step()
 
-        if self.steps % 500 == 0:
+        if self.steps % 1000 == 0:
             self.save(self.save_path)
-            self.export_onnx(f"adaptation_module_{self.steps}.onnx")
+            self.export_onnx(f"adaptation_module.onnx")
 
     def save(self, path):
         torch.save(self.adaptation_module.state_dict(), path)
