@@ -4,8 +4,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 
-class RMA:
+class RMA(nn.Module):
     def __init__(self, rma_enc_layers, num_rma_obs, rma_history_size, num_obs, device):
+        super().__init__()
+
         self.rma_enc_layers = rma_enc_layers
         self.num_rma_obs = num_rma_obs
         self.rma_history_size = rma_history_size
@@ -57,27 +59,22 @@ class RMA:
     def learn(self, rma_obs, rma_history):
         # regress rma encoder to adaptation module
 
-        # rma_obs shape : (num_envs, num_rma_obs)
-        # rma_history shape : (num_envs, rma_history_size, num_obs)
-        # input should be (batch, flattened input). batch is num_envs
+        with torch.set_grad_enabled(True):  # not great, but will do
 
-        # flatten
-        rma_history = rma_history.view(-1, self.num_obs * self.rma_history_size)
+            # rma_obs shape : (num_envs, num_rma_obs)
+            # rma_history shape : (num_envs, rma_history_size, num_obs)
+            # input should be (batch, flattened input). batch is num_envs
 
-        for _ in range(self.num_adaptation_module_substeps):
-            adaptation_pred = self.adaptation_module(rma_history)
-            with torch.no_grad():
-                adaptation_target = self.rma_encoder(rma_obs)
-            adaptation_loss = F.mse_loss(adaptation_pred, adaptation_target)
-            adaptation_loss.requires_grad = True
+            rma_history = rma_history.flatten(start_dim=1)
+            for _ in range(self.num_adaptation_module_substeps):
+                adaptation_pred = self.adaptation_module(rma_history)
+                with torch.no_grad():
+                    adaptation_target = self.rma_encoder(rma_obs)
 
+                adaptation_loss = F.mse_loss(adaptation_pred, adaptation_target)
+                # adaptation_loss.requires_grad = True  # why do i have to set this ?
 
-            self.adaptation_module_optimizer.zero_grad()
-            adaptation_loss.backward()
-            print("loss", adaptation_loss)
-            self.adaptation_module_optimizer.step()
-
-    # def step(self, rma_obs, rma_history):
-    #     rma_obs = self.rma_encoder(rma_obs)
-    #     rma_history = self.adaptation_module(rma_history)
-    #     return rma_obs, rma_history
+                self.adaptation_module_optimizer.zero_grad()
+                adaptation_loss.backward()
+                print("loss", adaptation_loss)
+                self.adaptation_module_optimizer.step()
