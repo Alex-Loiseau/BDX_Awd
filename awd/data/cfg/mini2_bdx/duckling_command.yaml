@@ -68,6 +68,7 @@ env:
     feetAirTimeRewardScale: 1.0
     actionRateRewardScale: -0.1
     standStillRewardScale: 0.0
+    footSlideRewardScale: -0.0005
 
     # normalization
     linearVelocityScale: [1.0, 1.0]
