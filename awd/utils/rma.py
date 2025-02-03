@@ -91,6 +91,7 @@ class RMA(nn.Module):
     def save(self, path):
         torch.save(self.adaptation_module.state_dict(), path)
 
+    # TODO save and load encoder for inference
     def load(self, path):
         self.adaptation_module.load_state_dict(torch.load(path))
 
