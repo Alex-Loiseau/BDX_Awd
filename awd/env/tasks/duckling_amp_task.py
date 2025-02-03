@@ -91,6 +91,7 @@ class DucklingAMPTask(duckling_amp.DucklingAMP):
         else:
             obs = duckling_obs
 
+        # RMA
         if not self.rma_enabled:
             if (env_ids is None):
                 self.obs_buf[:] = obs

@@ -56,6 +56,8 @@ class Duckling(BaseTask):
         self.init_done = False
         self.curriculum = self.cfg["env"]["terrain"]["curriculum"]
 
+        self.is_playing = self.cfg["args"].play or self.cfg["args"].test
+
         self._pd_control = self.cfg["env"]["pdControl"]
         self.custom_control = self.cfg["env"].get("customControl", False)
         self.power_scale = self.cfg["env"]["powerScale"]
@@ -259,8 +261,11 @@ class Duckling(BaseTask):
 
             # (num_envs, hist_size, num_obs + 3) # commands
             self.rma_obs_history_buffer = torch.zeros(self.num_envs, self.rma_history_size, total_num_obs, device=self.device, requires_grad=False)
-
-            self.rma = RMA(self.rma_enc_layers, self.num_rma_obs, self.rma_history_size, total_num_obs, self.device)
+            self.rma_save_path = "./"
+            self.rma = RMA(self.rma_enc_layers, self.num_rma_obs, self.rma_history_size, total_num_obs, self.device, self.rma_save_path)
+            if self.is_playing:
+                self.rma.load_encoder("encoder.pth")
+                self.rma.load_adaptation_module("adaptation_module.pth")
 
         if self.viewer != None:
             self._init_camera()
@@ -697,7 +702,7 @@ class Duckling(BaseTask):
 
     def _compute_observations(self, env_ids=None):
         obs = self._compute_duckling_obs(env_ids)
-
+        # Not used, duckling_amp_task.py implementation of _compute_observations is used
         rma_encoder_state = self.get_rma_encoder_state()
         if rma_encoder_state is None:
             rma_encoder_state = torch.empty(0).to(self.device)
@@ -715,7 +720,7 @@ class Duckling(BaseTask):
     def get_rma_encoder_state(self):
         if not self.rma_enabled:
             return None
-        
+
         return self.rma.rma_encoder(self.get_privileged_dynamic_state())
 
     # RMA
@@ -970,7 +975,8 @@ class Duckling(BaseTask):
             for i in range(self.rma_history_size-1, 0, -1):
                 self.rma_obs_history_buffer[:, i, :] = self.rma_obs_history_buffer[:, i-1, :]
             self.rma_obs_history_buffer[:, 0, :] = self.rma_obs_buf
-            self.rma.learn(self.get_privileged_dynamic_state(), self.rma_obs_history_buffer)
+            if not self.is_playing:
+                self.rma.learn(self.get_privileged_dynamic_state(), self.rma_obs_history_buffer)
 
         # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
         # pickle.dump(self.saved_obs, open("isaac_saved_obs.pkl", "wb"))

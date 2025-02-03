@@ -4,9 +4,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 import utils.flatten as flatten
 
+import os
+
 
 class RMA(nn.Module):
-    def __init__(self, rma_enc_layers, num_rma_obs, rma_history_size, num_obs, device):
+    def __init__(
+        self, rma_enc_layers, num_rma_obs, rma_history_size, num_obs, device, save_path
+    ):
         super().__init__()
 
         self.rma_enc_layers = rma_enc_layers
@@ -16,7 +20,7 @@ class RMA(nn.Module):
         self.device = device
 
         self.steps = 0
-        self.save_path = "./adaptation_module.pth"
+        self.save_path = save_path
 
         rma_latent_dim = self.rma_enc_layers[-1]
         rma_enc_dims = self.rma_enc_layers[:-1]
@@ -85,15 +89,27 @@ class RMA(nn.Module):
                 self.adaptation_module_optimizer.step()
 
         if self.steps % 1000 == 0:
-            self.save(self.save_path)
+            self.save_adaptation_module()
+            self.save_encoder()
             self.export_onnx(f"adaptation_module.onnx")
 
-    def save(self, path):
+    def save_adaptation_module(self):
+        path = os.path.join(self.save_path, "adaptation_module.pth")
+        print("Saving adaptation module to ", path)
         torch.save(self.adaptation_module.state_dict(), path)
 
-    # TODO save and load encoder for inference
-    def load(self, path):
+    def load_adaptation_module(self, path):
+        print("Loading adaptation module from", path)
         self.adaptation_module.load_state_dict(torch.load(path))
+
+    def save_encoder(self):
+        path = os.path.join(self.save_path, "encoder.pth")
+        print("Saving encoder to ", path)
+        torch.save(self.rma_encoder.state_dict(), path)
+
+    def load_encoder(self, path):
+        print("Loading encoder from", path)
+        self.rma_encoder.load_state_dict(torch.load(path))
 
     def export_onnx(self, path):
 
