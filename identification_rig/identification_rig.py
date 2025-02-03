@@ -1,110 +1,214 @@
 #!/usr/bin/env python3
 
 
-# Isaac Gym imports
+# Isaac self.gym imports
+import time
+from threading import Thread
 from isaacgym import gymapi
 from isaacgym import gymutil
 from isaacgym import gymtorch
 
-import math
 import numpy as np
-import torch
 
-LEVER_LENGTH = "0_150" # 0_100, 0_150
-MASS = "1" # 0_5, 1
+LEVER_LENGTH = "0_150"  # 0_100, 0_150
+MASS = "1"  # 0_5, 1
 
-def main():
-    # 1. Parse arguments (Isaac Gym utility function)
-    args = gymutil.parse_arguments(description="Isaac Gym Boilerplate Example")
+class IsaacIdentificationRig:
+    def __init__(self):
+        self.ready = False
+        # 1. Parse arguments (Isaac self.gym utility function)
+        args = gymutil.parse_arguments(description="Isaac self.gym Boilerplate Example")
 
-    # 2. Acquire the Gym interface
-    gym = gymapi.acquire_gym()
+        # 2. Acquire the self.gym interface
+        self.gym = gymapi.acquire_gym()
 
-    # 3. Configure the simulation
-    sim_params = gymapi.SimParams()
-    sim_params.up_axis = gymapi.UP_AXIS_Z  # Z-up coordinate system
-    sim_params.dt = 1.0 / 60.0             # simulation timestep
-    sim_params.substeps = 2               # physics substeps
+        # 3. Configure the simulation
+        self.sim_params = gymapi.SimParams()
+        self.sim_params.up_axis = gymapi.UP_AXIS_Z  # Z-up coordinate system
+        self.sim_params.gravity.x = 0
+        self.sim_params.gravity.y = 0
+        self.sim_params.gravity.z = -9.81
+        self.sim_params.dt = 0.005  # simulation timestep
+        self.sim_params.substeps = 1  # physics substeps
+        self.control_decimation = 4
+        self.dt = self.sim_params.dt * self.control_decimation
 
-    # You can switch to PhysX or Flex depending on your installation
-    sim_params.physx.solver_type = 1
-    sim_params.physx.num_position_iterations = 4
-    sim_params.physx.num_velocity_iterations = 1
-    sim_params.physx.rest_offset = 0.0
-    sim_params.physx.contact_offset = 0.001
-    sim_params.physx.use_gpu = True  # set to False if you don't have GPU support
-
-    # 4. Create the simulation (use GPU device 0, graphics device 0, PhysX, etc.)
-    sim = gym.create_sim(0, 0, gymapi.SIM_PHYSX, sim_params)
-    if sim is None:
-        raise Exception("Failed to create sim")
-
-    # 5. Add a ground plane
-    plane_params = gymapi.PlaneParams()
-    plane_params.normal = gymapi.Vec3(0.0, 0.0, 1.0)
-    gym.add_ground(sim, plane_params)
-
-    # 6. Create a viewer
-    viewer = gym.create_viewer(sim, gymapi.CameraProperties())
-    if viewer is None:
-        raise Exception("Failed to create viewer")
-
-    # 7. Create (or load) assets and environments
-    #    We'll just make one environment here as an example
-    envs = []
-    num_envs = 1
-
-    # The spacing below is how far apart multiple envs would be placed if you had more than one
-    env_lower = gymapi.Vec3(-1.0, -1.0, 0.0)
-    env_upper = gymapi.Vec3(1.0, 1.0, 1.0)
-
-    # Path where your URDF or mesh files exist
-    asset_root = "./assets"
-    # franka_asset_file = "urdf/franka_description/robots/franka_panda.urdf"
-    # asset_file = "awd/data/assets/mini2_bdx/mini2_bdx.urdf"
-    asset_file = f"identification_rig_{LEVER_LENGTH}m_{MASS}kg/robot.urdf"
-
-    # Setup asset options
-    asset_options = gymapi.AssetOptions()
-    asset_options.fix_base_link = True
-    asset_options.disable_gravity = False
-
-    # Load the asset
-    asset = gym.load_asset(sim, asset_root, asset_file, asset_options)
-
-    for i in range(num_envs):
-        # Create an environment
-        env = gym.create_env(sim, env_lower, env_upper, num_envs)
-        envs.append(env)
-
-        # Create an actor (the robot)
-        pose = gymapi.Transform()
-        pose.p.x = 0.0
-        pose.p.y = 0.0
-        pose.p.z = 1.0
-
-        # Add the robot to the environment
-        # The last two parameters: "franka" is the name for the actor, and i is the index
-        handle = gym.create_actor(
-            env, asset, pose, "actor", i, 1
+        # You can switch to PhysX or Flex depending on your installation
+        self.sim_params.physx.solver_type = 1
+        self.sim_params.physx.num_position_iterations = 4
+        self.sim_params.physx.num_velocity_iterations = 1
+        self.sim_params.physx.rest_offset = 0.0
+        self.sim_params.physx.contact_offset = 0.001
+        self.sim_params.physx.use_gpu = (
+            True  # set to False if you don't have GPU support
         )
 
-    # 8. Main simulation loop
-    while not gym.query_viewer_has_closed(viewer):
-        # Step the physics
-        gym.simulate(sim)
-        gym.fetch_results(sim, True)
+        # 4. Create the simulation (use GPU device 0, graphics device 0, PhysX, etc.)
+        self.sim = self.gym.create_sim(0, 0, gymapi.SIM_PHYSX, self.sim_params)
+        if self.sim is None:
+            raise Exception("Failed to create sim")
 
-        # Update the viewer’s graphics
-        gym.step_graphics(sim)
-        gym.draw_viewer(viewer, sim, True)
+        # 5. Add a ground plane
+        plane_params = gymapi.PlaneParams()
+        plane_params.normal = gymapi.Vec3(0.0, 0.0, 1.0)
+        self.gym.add_ground(self.sim, plane_params)
 
-        # This will sync the simulation to match the desired dt, avoiding super-fast execution
-        gym.sync_frame_time(sim)
+        # 6. Create a viewer
+        self.viewer = self.gym.create_viewer(self.sim, gymapi.CameraProperties())
+        if self.viewer is None:
+            raise Exception("Failed to create viewer")
 
-    # 9. Cleanup
-    gym.destroy_viewer(viewer)
-    gym.destroy_sim(sim)
+        # 7. Create (or load) assets and environments
+        #    We'll just make one environment here as an example
+        envs = []
+        num_envs = 1
+
+        # The spacing below is how far apart multiple envs would be placed if you had more than one
+        env_lower = gymapi.Vec3(-1.0, -1.0, 0.0)
+        env_upper = gymapi.Vec3(1.0, 1.0, 1.0)
+
+        # Path where your URDF or mesh files exist
+        asset_root = "./assets"
+        # franka_asset_file = "urdf/franka_description/robots/franka_panda.urdf"
+        # asset_file = "awd/data/assets/mini2_bdx/mini2_bdx.urdf"
+        asset_file = f"identification_rig_{LEVER_LENGTH}m_{MASS}kg/robot.urdf"
+
+        # Setup asset options
+        asset_options = gymapi.AssetOptions()
+        asset_options.fix_base_link = True
+        asset_options.disable_gravity = False
+        asset_options.thickness = 0.01
+        asset_options.angular_damping = 0.00
+        asset_options.linear_damping = 0.0
+        asset_options.max_angular_velocity = 1000.0
+        asset_options.max_linear_velocity = 1000.0
+        asset_options.default_dof_drive_mode = 3
+
+        # Load the asset
+        asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+
+        for i in range(num_envs):
+            # Create an environment
+            env = self.gym.create_env(self.sim, env_lower, env_upper, num_envs)
+            envs.append(env)
+
+            # Create an actor (the robot)
+            pose = gymapi.Transform()
+            pose.p.x = 0.0
+            pose.p.y = 0.0
+            pose.p.z = 1.0
+
+            # Add the robot to the environment
+            # The last two parameters: "franka" is the name for the actor, and i is the index
+            handle = self.gym.create_actor(env, asset, pose, "actor", i, 1)
+
+            dof_props = self.gym.get_asset_dof_properties(asset)
+            dof_props["friction"] = 0.052
+            dof_props["armature"] = 0.024
+            # dof_props["damping"] = 0.86
+
+            self.gym.set_actor_dof_properties(env, handle, dof_props)
+
+        self.dof_state_tensor = self.gym.acquire_dof_state_tensor(self.sim)
+        self.dof_state = gymtorch.wrap_tensor(self.dof_state_tensor)
+        self.dofs_per_env = self.dof_state.shape[0] // num_envs
+        self.dof_pos = self.dof_state.view(num_envs, self.dofs_per_env, 2)[..., :1, 0]
+        self.dof_vel = self.dof_state.view(num_envs, self.dofs_per_env, 2)[..., :1, 1]
+
+        self.kp = 16
+        self.max_effort = 4.6
+        self.torque_enabled = True
+        self.goal_position = 0
+        Thread(target=self.run).start()
+
+    def run(self):
+        self.ready = True
+        while not self.gym.query_viewer_has_closed(self.viewer):
+            for _ in range(self.control_decimation):
+                torques = self.kp * (self.goal_position - self.dof_pos)
+                torques = np.clip(torques, -self.max_effort, self.max_effort)
+                torques *= self.torque_enabled
+                print(torques)
+                self.gym.set_dof_actuation_force_tensor(
+                    self.sim, gymtorch.unwrap_tensor(torques)
+                )
+
+                self.gym.simulate(self.sim)
+                self.gym.fetch_results(self.sim, True)
+                self.gym.refresh_dof_state_tensor(self.sim)
+
+            self.gym.refresh_dof_state_tensor(self.sim)
+            self.gym.refresh_actor_root_state_tensor(self.sim)
+            self.gym.refresh_rigid_body_state_tensor(self.sim)
+
+            self.gym.refresh_force_sensor_tensor(self.sim)
+            self.gym.refresh_dof_force_tensor(self.sim)
+            self.gym.refresh_net_contact_force_tensor(self.sim)
+            self.gym.step_graphics(self.sim)
+
+            self.gym.draw_viewer(self.viewer, self.sim, True)
+            self.gym.sync_frame_time(self.sim)
+
+        # 9. Cleanup
+        self.gym.destroy_viewer(self.viewer)
+        self.gym.destroy_sim(self.sim)
+
+    def enable_torque(self):
+        self.torque_enabled = True
+
+    def disable_torque(self):
+        self.torque_enabled = False
+
+    def set_goal_position(self, position):
+        self.goal_position = position
+
+    def get_present_position(self):
+        return self.dof_pos[0][0].cpu().numpy()
+
+    def get_present_velocity(self):
+        return self.dof_vel[0][0].cpu().numpy()
+
+
+# class IsaacIdentificationRigService(rpyc.Service):
+#     exposed_isaac_identification_rig = IsaacIdentificationRig()
+
+#     def on_connect(self, conn):
+#         pass
+
+#     def on_disconnect(self, conn):
+#         pass
+
+
+# def main():
+#     t = ThreadedServer(
+#         IsaacIdentificationRigService,
+#         port=18861,
+#         # protocol_config={
+#         #     "allow_all_attrs": True,
+#         #     "allow_setattr": True,
+#         #     "allow_pickle": True
+#         #     # "allow_delattr": True,
+#         # },
+#     )
+#     t.start()
+
 
 if __name__ == "__main__":
-    main()
+    i = IsaacIdentificationRig()
+    A = 0.5
+    F = 1.5
+    s = time.time()
+    goal_position = -np.deg2rad(90)
+    while True:
+        # i.set_goal_position(A * np.sin(2 * np.pi * F * time.time()))
+        i.set_goal_position(goal_position)
+        # print(i.get_present_position())
+        # print(i.get_present_velocity())
+        time.sleep(0.01)
+
+        if time.time() - s > 3:
+            i.disable_torque()
+
+        if time.time() - s > 6:
+            i.enable_torque()
+            s = time.time()
