@@ -276,7 +276,11 @@ class Duckling(BaseTask):
         return
 
     def get_obs_size(self):
-        return self._num_obs + self.rma_enabled * self.rma_enc_layers[-1]
+        if self.rma_enabled:
+            return self._num_obs + self.rma_enc_layers[-1]
+        else:
+            return self._num_obs
+
 
     def get_action_size(self):
         return self._num_actions
@@ -471,9 +475,9 @@ class Duckling(BaseTask):
         asset_file = os.path.basename(asset_path)
 
         asset_options = gymapi.AssetOptions()
-        asset_options.density = 0.001
+        asset_options.density = 0.0
         # asset_options.armature = self._dof_props_config["left_hip_yaw"]["armature"]
-        asset_options.thickness = 0.01
+        asset_options.thickness = 0.0
         asset_options.angular_damping = 0.00
         asset_options.linear_damping = 0.0
         asset_options.max_angular_velocity = 1000.0
@@ -617,7 +621,7 @@ class Duckling(BaseTask):
                 continue
 
             # for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
-            for prop_type in ["friction", "armature", "damping"]:
+            for prop_type in ["friction", "armature"]:
                 if self._dof_props_config[dof_name].get(prop_type, None) is not None:
                     dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type]
 
@@ -875,11 +879,11 @@ class Duckling(BaseTask):
 
             for _ in range(self.control_freq_inv):
 
-                self.torques = self.p_gains*(self.get_actions()*self.power_scale + self._default_dof_pos - self._dof_pos) - (self.d_gains * self.get_dof_vels())
+                self.torques = self.p_gains*(self.get_actions()*self.power_scale + self._default_dof_pos - self._dof_pos)# - (self.d_gains * self.get_dof_vels())
                 if self.randomize_torques:
                     self.torques *= self.randomize_torques_factors
                 self.torques = torch.clip(self.torques, -self.max_efforts, self.max_efforts)
-                # self.torques -= (self.d_gains * self.get_dof_vels())
+                self.torques -= (self.d_gains * self.get_dof_vels())
 
                 self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
                 self.gym.simulate(self.sim)

@@ -14,7 +14,7 @@ env:
   hybridInitProb: 0.5
   # hybridInitProb: 0
   numAMPObsSteps: 20
-  rmaEnabled: True
+  rmaEnabled: False
   numRmaObs: 22
   rmaHistorySize: 50
   rmaEncLayers: [256, 128, 18]
@@ -121,14 +121,14 @@ sim:
   physx:
     num_threads: 4
     solver_type: 1 # 0: pgs, 1: tgs
-    num_position_iterations: 4
-    num_velocity_iterations: 1
-    contact_offset: 0.02
-    rest_offset: 0.0
-    bounce_threshold_velocity: 0.2
-    max_depenetration_velocity: 100.0
-    default_buffer_size_multiplier: 5.0
-    contact_collection: 1
+    # num_position_iterations: 4
+    # num_velocity_iterations: 1
+    # contact_offset: 0.02
+    # rest_offset: 0.0
+    # bounce_threshold_velocity: 0.2
+    # max_depenetration_velocity: 100.0
+    # default_buffer_size_multiplier: 5.0
+    # contact_collection: 1
 
   flex:
     num_inner_iterations: 10
