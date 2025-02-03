@@ -707,17 +707,11 @@ class Duckling(BaseTask):
     def _compute_observations(self, env_ids=None):
         obs = self._compute_duckling_obs(env_ids)
         # Not used, duckling_amp_task.py implementation of _compute_observations is used
-        rma_encoder_state = self.get_rma_encoder_state()
-        if rma_encoder_state is None:
-            rma_encoder_state = torch.empty(0).to(self.device)
         if (env_ids is None):
-            self.rma_obs_buf[:] = obs
-            self.obs_buf[:] = torch.cat((obs, rma_encoder_state))
+            self.obs_buf[:] = obs
         else:
             self.rma_obs_buf[env_ids] = obs
-            self.obs_buf[env_ids] = torch.cat((obs, rma_encoder_state))
-
-        print("rma encoder state", rma_encoder_state)
+            self.obs_buf[env_ids] = obs[env_ids]
 
         return
 
