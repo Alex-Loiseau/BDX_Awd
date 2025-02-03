@@ -13,6 +13,13 @@ import numpy as np
 LEVER_LENGTH = "0_150"  # 0_100, 0_150
 MASS = "1"  # 0_5, 1
 
+ARMATURE = 0.027
+MAX_EFFORT = 6.49
+KP = 6.55
+FRICTION = 0.083
+DAMPING = 0.65
+
+
 class IsaacIdentificationRig:
     def __init__(self):
         self.ready = False
@@ -103,9 +110,9 @@ class IsaacIdentificationRig:
             handle = self.gym.create_actor(env, asset, pose, "actor", i, 1)
 
             dof_props = self.gym.get_asset_dof_properties(asset)
-            dof_props["friction"] = 0.052
-            dof_props["armature"] = 0.024
-            # dof_props["damping"] = 0.86
+            dof_props["friction"] = FRICTION
+            dof_props["armature"] = ARMATURE
+            dof_props["damping"] = DAMPING
 
             self.gym.set_actor_dof_properties(env, handle, dof_props)
 
@@ -115,8 +122,8 @@ class IsaacIdentificationRig:
         self.dof_pos = self.dof_state.view(num_envs, self.dofs_per_env, 2)[..., :1, 0]
         self.dof_vel = self.dof_state.view(num_envs, self.dofs_per_env, 2)[..., :1, 1]
 
-        self.kp = 16
-        self.max_effort = 4.6
+        self.kp = KP
+        self.max_effort = MAX_EFFORT
         self.torque_enabled = True
         self.goal_position = 0
         Thread(target=self.run).start()
@@ -128,7 +135,6 @@ class IsaacIdentificationRig:
                 torques = self.kp * (self.goal_position - self.dof_pos)
                 torques = np.clip(torques, -self.max_effort, self.max_effort)
                 torques *= self.torque_enabled
-                print(torques)
                 self.gym.set_dof_actuation_force_tensor(
                     self.sim, gymtorch.unwrap_tensor(torques)
                 )
@@ -168,47 +174,12 @@ class IsaacIdentificationRig:
     def get_present_velocity(self):
         return self.dof_vel[0][0].cpu().numpy()
 
-
-# class IsaacIdentificationRigService(rpyc.Service):
-#     exposed_isaac_identification_rig = IsaacIdentificationRig()
-
-#     def on_connect(self, conn):
-#         pass
-
-#     def on_disconnect(self, conn):
-#         pass
-
-
-# def main():
-#     t = ThreadedServer(
-#         IsaacIdentificationRigService,
-#         port=18861,
-#         # protocol_config={
-#         #     "allow_all_attrs": True,
-#         #     "allow_setattr": True,
-#         #     "allow_pickle": True
-#         #     # "allow_delattr": True,
-#         # },
-#     )
-#     t.start()
-
-
 if __name__ == "__main__":
     i = IsaacIdentificationRig()
     A = 0.5
     F = 1.5
-    s = time.time()
-    goal_position = -np.deg2rad(90)
     while True:
-        # i.set_goal_position(A * np.sin(2 * np.pi * F * time.time()))
-        i.set_goal_position(goal_position)
-        # print(i.get_present_position())
-        # print(i.get_present_velocity())
+        i.set_goal_position(A * np.sin(2 * np.pi * F * time.time()))
+        print(i.get_present_position())
+        print(i.get_present_velocity())
         time.sleep(0.01)
-
-        if time.time() - s > 3:
-            i.disable_torque()
-
-        if time.time() - s > 6:
-            i.enable_torque()
-            s = time.time()
