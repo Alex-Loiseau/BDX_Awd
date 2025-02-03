@@ -44,7 +44,7 @@ env:
   contactBodies: ["foot_assembly", "foot_assembly_2"]
   maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
   # maskJoints: []
-  maskJointRandomRange: [-0.5, 0.5]
+  maskJointRandomRange: [-0.1, 0.1]
   terminationHeight: -0.05
   initHeight: 0.19
   # initHeight: 0.4
