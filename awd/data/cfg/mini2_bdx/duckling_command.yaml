@@ -45,7 +45,7 @@ env:
   maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
   # maskJoints: []
   # maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
-  maskJointRandomRange: [-0.5, 0.5] # Warning, this is multiplied by powerScale
+  maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
   terminationHeight: -0.05
   initHeight: 0.19
   # initHeight: 0.4
@@ -86,7 +86,7 @@ env:
     yaw: [-0.5, 0.5] # min max [rad/s]
 
   # randomCommandVelocityRanges:
-  #   linear_x: [0.1, 0.1] # min max [m/s]
+  #   linear_x: [0.2, 0.2] # min max [m/s]
   #   linear_y: [0, 0] # min max [m/s]
   #   yaw: [0, 0] # min max [rad/s]
 

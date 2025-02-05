@@ -970,13 +970,14 @@ class Duckling(BaseTask):
         # WARNING Most recent is first
         # DON'T FORGET
         if self.rma_enabled:
+            # filled at 50hz
             for i in range(self.rma_history_size-1, 0, -1):
                 self.rma_obs_history_buffer[:, i, :] = self.rma_obs_history_buffer[:, i-1, :]
             self.rma_obs_history_buffer[:, 0, :] = self.rma_obs_buf
             if not self.is_playing:
                 self.rma.learn(self.get_privileged_dynamic_state(), self.rma_obs_history_buffer)
 
-        # self.saved_obs.append(self.obs_buf[0].cpu().numpy())
+        # self.saved_obs.append(self.rma_obs_buf[0].cpu().numpy())
         # pickle.dump(self.saved_obs, open("isaac_saved_obs.pkl", "wb"))
 
         return

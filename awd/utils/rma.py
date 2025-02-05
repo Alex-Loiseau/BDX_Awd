@@ -1,10 +1,34 @@
 import torch.nn as nn
+# import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import utils.flatten as flatten
-
+# import pickle
+# import numpy as np
 import os
+
+# import onnxruntime
+
+
+# class OnnxInfer:
+#     def __init__(self, onnx_model_path, input_name="obs", awd=False):
+#         self.onnx_model_path = onnx_model_path
+#         self.ort_session = onnxruntime.InferenceSession(
+#             self.onnx_model_path, providers=["CPUExecutionProvider"]
+#         )
+#         self.input_name = input_name
+#         self.awd = awd
+
+#     def infer(self, inputs):
+#         if self.awd:
+#             outputs = self.ort_session.run(None, {self.input_name: [inputs]})
+#             return outputs[0][0]
+#         else:
+#             outputs = self.ort_session.run(
+#                 None, {self.input_name: inputs.astype("float32")}
+#             )
+#             return outputs[0]
 
 
 class RMA(nn.Module):
@@ -145,3 +169,42 @@ class RMA(nn.Module):
             input_names=["rma_history"],
             output_names=["latent"],
         )
+
+# # DEBUG
+# if __name__ == "__main__":
+#     robot_saved_obs = pickle.load(open("../../robot_computed_obs.pkl", "rb"))
+#     isaac_saved_obs = pickle.load(open("../../isaac_saved_obs.pkl", "rb"))
+#     saved_obs = robot_saved_obs
+#     buffer_size = 50
+
+#     rma = RMA([256, 128, 18], 22, 50, 56, "cpu", "/tmp")
+#     rma.load_adaptation_module("../../adaptation_module.pth")
+#     rma.load_encoder("../../encoder.pth")
+#     adaptation_module_onnx = OnnxInfer(
+#         "../../adaptation_module.onnx", "rma_history", awd=True
+#     )
+
+#     onnx_latents = []
+#     torch_latents = []
+
+#     buffer = np.zeros((buffer_size, 56), dtype=np.float32)
+#     for obs in saved_obs:
+#         buffer = np.roll(buffer, 1, axis=0)
+#         buffer[0] = obs
+
+#         buffer_torch = torch.from_numpy(buffer)
+#         onnx_latent = adaptation_module_onnx.infer(buffer.flatten())
+#         torch_latent = rma.adaptation_module(buffer_torch.flatten()).detach().numpy()
+
+#         onnx_latents.append(onnx_latent)
+#         torch_latents.append(torch_latent)
+
+#     onnx_latents = np.array(onnx_latents)
+#     torch_latents = np.array(torch_latents)
+
+#     # plt.plot(onnx_latents, label="onnx")
+#     plt.ylim(-5, 5)
+#     plt.plot(torch_latents, label="torch")
+#     plt.legend()
+#     plt.title("robot latent")
+#     plt.show()
