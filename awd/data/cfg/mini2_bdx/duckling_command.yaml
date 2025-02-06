@@ -37,7 +37,7 @@ env:
   randomizeImuDelay: True
   maxImuDelay: 0.05 # s, 50ms
   randomizeImuOrientation: True
-  maxImuOrientation: 0.05 # rad -> ~3°
+  maxImuOrientation: 0.035 # rad -> ~2°
   randomizeJointAngleOffsets: True
   maxJointAngleOffset: 0.018 # rad -> ~1° 
 
