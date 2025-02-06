@@ -20,7 +20,7 @@ env:
   rmaHistorySize: 50
   rmaEncLayers: [256, 128, 18]
 
-  pushRobots: True
+  pushRobots: False
   pushEveryNSeconds: 3 #s, push every N seconds
   continousPushSteps: 10 # push 10 times (not implemented)
   maxPushVelXy: 0.3
