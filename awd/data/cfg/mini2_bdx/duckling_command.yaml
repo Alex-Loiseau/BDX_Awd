@@ -19,18 +19,18 @@ env:
   rmaHistorySize: 50
   rmaEncLayers: [256, 128, 18]
 
-  pushRobots: False
+  pushRobots: True
   pushEveryNSeconds: 3 #s, push every N seconds
   continousPushSteps: 10 # push 10 times (not implemented)
   maxPushVelXy: 0.5
 
   # COM and mass are randomized only once for each actor, but not at each reset
   randomizeCom: True
-  comRandomizeRange: [-0.05, 0.05] # kg
+  comRandomizeRange: [-0.07, 0.07] # kg
   randomizeTorques: True
-  torqueMultiplierRange: [0.95, 1.05]
+  torqueMultiplierRange: [0.90, 1.1]
   randomizeBaseMass: True
-  massMultiplierRange: [0.95, 1.05]
+  massMultiplierRange: [0.9, 1.1]
   randomizeActionDelay: True
   maxActionDelay: 0.05 # s, 50ms
   randomizeImuDelay: True
@@ -45,7 +45,7 @@ env:
   maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
   # maskJoints: []
   # maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
-  maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
+  maskJointRandomRange: [-2, 2] # Warning, this is multiplied by powerScale
   terminationHeight: -0.05
   initHeight: 0.19
   # initHeight: 0.4
