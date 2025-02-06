@@ -82,7 +82,6 @@ class Duckling(BaseTask):
 
         self.rma_enabled = self.cfg["env"].get("rmaEnabled", False)
         if self.rma_enabled:
-            self.num_rma_obs = self.cfg["env"].get("numRmaObs", 0)
             self.rma_history_size = self.cfg["env"].get("rmaHistorySize", 10)
             self.rma_enc_layers = self.cfg["env"].get("rmaEncLayers", 1)
 
@@ -98,6 +97,12 @@ class Duckling(BaseTask):
 
         self.randomize_base_mass = self.cfg["env"].get("randomizeBaseMass", False)
         self.mass_multiplier_range = self.cfg["env"].get("massMultiplierRange", [1.0, 1.0])
+
+        self.randomize_imu_orientation = self.cfg["env"].get("randomizeImuOrientation", False)
+        self.max_imu_orientation = self.cfg["env"].get("maxImuOrientation", 0.0)
+
+        self.randomize_joint_angle_offsets = self.cfg["env"].get("randomizeJointAngleOffsets", False)
+        self.max_joint_angle_offset = self.cfg["env"].get("maxJointAngleOffset", 0.0)
 
         super().__init__(cfg=self.cfg)
 
@@ -126,11 +131,6 @@ class Duckling(BaseTask):
             self.last_dof_pos = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
             self.custom_dof_vel_decimation = 2
             self.custom_dof_vel_counter = 0
-
-        # self.randomize_imu_orientation = self.cfg["env"].get("randomizeImuOrientation", False)
-        # if self.randomize_imu_orientation:
-        #     self.max_imu_orientation = self.cfg["env"].get("maxImuOrientation", 0.0)
-
 
         self.common_t = 0
         self.max_v = 0
@@ -266,7 +266,7 @@ class Duckling(BaseTask):
             # (num_envs, hist_size, num_obs + 3) # commands
             self.rma_obs_history_buffer = torch.zeros(self.num_envs, self.rma_history_size, total_num_obs, device=self.device, requires_grad=False)
             self.rma_save_path = "./"
-            self.rma = RMA(self.rma_enc_layers, self.num_rma_obs, self.rma_history_size, total_num_obs, self.device, self.rma_save_path)
+            self.rma = RMA(self.rma_enc_layers, self.get_privileged_dynamic_state().shape[1], self.rma_history_size, total_num_obs, self.device, self.rma_save_path)
             if self.is_playing:
                 self.rma.load_encoder("encoder.pth")
                 self.rma.load_adaptation_module("adaptation_module.pth")
@@ -588,8 +588,11 @@ class Duckling(BaseTask):
                     recomputeInertia=True,
                 )
 
-        # if self.randomize_imu_orientation:
-        #     self.randomize_imu_orientation_values = torch_rand_float(-self.max_imu_orientation, self.max_imu_orientation, (self.num_envs, 3), device=self.device)
+        if self.randomize_imu_orientation:
+            self.randomize_imu_orientation_values = torch_rand_float(-self.max_imu_orientation, self.max_imu_orientation, (self.num_envs, 3), device=self.device)
+
+        if self.randomize_joint_angle_offsets:
+            self.randomize_joint_angle_offset_values = torch_rand_float(-self.max_joint_angle_offset, self.max_joint_angle_offset, (self.num_envs, self.num_dof), device=self.device)
 
         # object_rb_props = self.gym.get_actor_rigid_body_properties(self.envs[0], self.duckling_handles[0])
         # masses = [prop.mass for prop in object_rb_props]
@@ -772,7 +775,6 @@ class Duckling(BaseTask):
 
         if self.randomize_action_delay:
             action_index_range = [0, self.action_delay_buffer_size]
-            # actions_random_indices = torch.ones(self.num_envs, 1, device=self.device, dtype=torch.int64) * self.actions_random_index
             
             action_delay_scale, action_delay_shift = get_scale_shift(action_index_range)
             
@@ -788,12 +790,35 @@ class Duckling(BaseTask):
 
         if self.randomize_imu_delay:
             imu_index_range = [0, self.imu_delay_buffer_size]
-            # imu_random_indices = torch.ones(self.num_envs, 1, device=self.device, dtype=torch.int64) * self.imu_random_index
             imu_delay_scale, imu_delay_shift = get_scale_shift(imu_index_range)
             priv_dynamics_obs = torch.cat(
                 (
                     priv_dynamics_obs,
                     ((self.imu_random_indices.unsqueeze(-1) - imu_delay_shift) * imu_delay_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if self.randomize_imu_orientation:
+            imu_orientation_scale, imu_orientation_shift = get_scale_shift([-self.max_imu_orientation, self.max_imu_orientation])
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((self.randomize_imu_orientation_values - imu_orientation_shift) * imu_orientation_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if self.randomize_joint_angle_offsets:
+            joint_angle_offset_scale, joint_angle_offset_shift = get_scale_shift([-self.max_joint_angle_offset, self.max_joint_angle_offset])
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((self.randomize_joint_angle_offset_values - joint_angle_offset_shift) * joint_angle_offset_scale).to(
                         self.device
                     ),
                 ),
@@ -877,6 +902,9 @@ class Duckling(BaseTask):
             if self._mask_joint_values is not None:
                 self.actions[:, self._mask_joint_ids] = self._mask_joint_values
 
+            if self.randomize_joint_angle_offsets:
+                self._dof_pos += self.randomize_joint_angle_offset_values
+
             for _ in range(self.control_freq_inv):
 
                 self.torques = self.p_gains*(self.get_actions()*self.power_scale + self._default_dof_pos - self._dof_pos)# - (self.d_gains * self.get_dof_vels())
@@ -898,11 +926,12 @@ class Duckling(BaseTask):
                         self.custom_dof_vel = (self._dof_pos - self.last_dof_pos) / (self.sim_params.dt * self.custom_dof_vel_decimation)
                         self.last_dof_pos = self._dof_pos.clone()
 
-                # if self.randomize_imu_orientation:
-                #     imu = self._duckling_root_states[:, 3:7]
-                #     imu = quat_rotate(imu, self.randomize_imu_orientation_values)
+                imu = self._duckling_root_states[:, 3:7]
+                if self.randomize_imu_orientation:
+                    offset_quat = quat_from_euler_xyz(self.randomize_imu_orientation_values[:, 0], self.randomize_imu_orientation_values[:, 1], self.randomize_imu_orientation_values[:, 2])
+                    imu = quat_mul(imu, offset_quat)
 
-                self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
+                self.projected_gravity = quat_rotate_inverse(imu, self.gravity_vec)
 
                 if self.randomize_imu_delay:
                     # fill the imu_delay_buffer, first is latest, last is oldest
