@@ -120,13 +120,17 @@ class Duckling(BaseTask):
             # self.actions_random_index = 0
             self.actions_random_indices = torch.randint(0, self.action_delay_buffer_size, (self.num_envs, ), device=self.device)
 
-
         self.use_custom_dof_vels = self.cfg["env"].get("useCustomDofVels", False)
         if self.use_custom_dof_vels:
             self.custom_dof_vel = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
             self.last_dof_pos = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
             self.custom_dof_vel_decimation = 2
             self.custom_dof_vel_counter = 0
+
+        # self.randomize_imu_orientation = self.cfg["env"].get("randomizeImuOrientation", False)
+        # if self.randomize_imu_orientation:
+        #     self.max_imu_orientation = self.cfg["env"].get("maxImuOrientation", 0.0)
+
 
         self.common_t = 0
         self.max_v = 0
@@ -584,6 +588,8 @@ class Duckling(BaseTask):
                     recomputeInertia=True,
                 )
 
+        # if self.randomize_imu_orientation:
+        #     self.randomize_imu_orientation_values = torch_rand_float(-self.max_imu_orientation, self.max_imu_orientation, (self.num_envs, 3), device=self.device)
 
         # object_rb_props = self.gym.get_actor_rigid_body_properties(self.envs[0], self.duckling_handles[0])
         # masses = [prop.mass for prop in object_rb_props]
@@ -891,6 +897,10 @@ class Duckling(BaseTask):
                     if self.custom_dof_vel_counter % self.custom_dof_vel_decimation == 0:
                         self.custom_dof_vel = (self._dof_pos - self.last_dof_pos) / (self.sim_params.dt * self.custom_dof_vel_decimation)
                         self.last_dof_pos = self._dof_pos.clone()
+
+                # if self.randomize_imu_orientation:
+                #     imu = self._duckling_root_states[:, 3:7]
+                #     imu = quat_rotate(imu, self.randomize_imu_orientation_values)
 
                 self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
 

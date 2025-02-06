@@ -22,7 +22,7 @@ env:
   pushRobots: True
   pushEveryNSeconds: 3 #s, push every N seconds
   continousPushSteps: 10 # push 10 times (not implemented)
-  maxPushVelXy: 0.5
+  maxPushVelXy: 0.3
 
   # COM and mass are randomized only once for each actor, but not at each reset
   randomizeCom: True
@@ -35,6 +35,8 @@ env:
   maxActionDelay: 0.05 # s, 50ms
   randomizeImuDelay: True
   maxImuDelay: 0.05 # s, 50ms
+  randomizeImuOrientation: False
+  maxImuOrientation: 0.05 # rad -> ~3°
 
   customControl: True
   useCustomDofVels: True
@@ -80,18 +82,18 @@ env:
     angularVelocityScale: 1.0
     useAverageVelocities: True
 
-  randomCommandVelocityRanges:
-    linear_x: [-0.2, 0.3] # min max [m/s]
-    linear_y: [-0.2, 0.2] # min max [m/s]
-    yaw: [-0.5, 0.5] # min max [rad/s]
-
   # randomCommandVelocityRanges:
-  #   linear_x: [0.2, 0.2] # min max [m/s]
-  #   linear_y: [0, 0] # min max [m/s]
-  #   yaw: [0, 0] # min max [rad/s]
+  #   linear_x: [-0.2, 0.3] # min max [m/s]
+  #   linear_y: [-0.2, 0.2] # min max [m/s]
+  #   yaw: [-0.5, 0.5] # min max [rad/s]
+
+  randomCommandVelocityRanges:
+    linear_x: [0.2, 0.2] # min max [m/s]
+    linear_y: [0, 0] # min max [m/s]
+    yaw: [0, 0] # min max [rad/s]
 
   terrain:
-    terrainType: plane # plane, or trimesh
+    terrainType: trimesh # plane, or trimesh
     staticFriction: 1.0 # [-]
     dynamicFriction: 1.0 # [-]
     restitution: 0. # [-]
@@ -136,21 +138,21 @@ sim:
     warm_start: 0.25
 
 task:
-  randomize: False
+  randomize: True
   randomization_params:
     frequency: 600 # Define how many environment steps between generating new randomizations
     observations:
-      range: [0, .002] # range for the white noise
+      range: [0, .005] # range for the white noise
       operation: "additive"
       distribution: "gaussian"
     actions:
       # range: [0., .02]
-      range: [0., .00] # already randomized by torque
+      range: [0., .005] # already randomized by torque
       operation: "additive"
       distribution: "gaussian"
     sim_params:
       gravity:
-        range: [0, 0.05]
+        range: [0, 0]
         operation: "additive"
         distribution: "gaussian"
         schedule: "linear" # "linear" will linearly interpolate between no rand and max rand
@@ -160,7 +162,7 @@ task:
         color: True
         rigid_body_properties:
           mass:
-            range: [0.95, 1.05]
+            range: [1, 1]
             operation: "scaling"
             distribution: "uniform"
             setup_only: True # Property will only be randomized once before simulation is started. See Domain Randomization Documentation for more info.
@@ -169,13 +171,13 @@ task:
         rigid_shape_properties:
           friction:
             num_buckets: 500
-            range: [0.95, 1.05]
+            range: [1.0, 1.0]
             operation: "scaling"
             distribution: "uniform"
             schedule: "linear" # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
             schedule_steps: 100000
           restitution:
-            range: [0., 0.1]
+            range: [0., 0.05]
             operation: "scaling"
             distribution: "uniform"
             schedule: "linear" # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
