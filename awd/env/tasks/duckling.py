@@ -545,6 +545,9 @@ class Duckling(BaseTask):
         env_lower = gymapi.Vec3(-spacing, -spacing, 0.0)
         env_upper = gymapi.Vec3(spacing, spacing, spacing)
 
+        if self.randomize_joint_friction:
+            self.random_friction_factors = torch_rand_float(self.friction_multiplier_range[0], self.friction_multiplier_range[1], (self.num_envs, self.num_dof), device=self.device)
+
         for i in range(self.num_envs):
             # create env instance
             env_ptr = self.gym.create_env(self.sim, env_lower, env_upper, num_per_row)
@@ -599,22 +602,6 @@ class Duckling(BaseTask):
         if self.randomize_joint_angle_offsets:
             self.randomize_joint_angle_offset_values = torch_rand_float(-self.max_joint_angle_offset, self.max_joint_angle_offset, (self.num_envs, self.num_dof), device=self.device)
 
-        if self.randomize_joint_friction:
-            self.random_friction_factors = torch_rand_float(self.friction_multiplier_range[0], self.friction_multiplier_range[1], (self.num_envs, self.num_dof), device=self.device)
-            dof_names = self.gym.get_asset_dof_names(duckling_asset)
-            dof_prop = self.gym.get_asset_dof_properties(duckling_asset)
-            
-            for env_i, handle in enumerate(self.duckling_handles):
-                for joint_i, dof_name in enumerate(dof_names):
-                    if dof_name not in self._dof_props_config:
-                        continue
-                    
-                    # randomize friction
-                    if self._dof_props_config[dof_name].get("friction", None) is not None:
-                        dof_prop["friction"][joint_i] = self._dof_props_config[dof_name]["friction"] * self.random_friction_factors[env_i, joint_i]
-
-                self.gym.set_actor_dof_properties(env_ptr, handle, dof_prop)
-
         return
 
     def _build_env(self, env_id, env_ptr, duckling_asset):
@@ -649,7 +636,10 @@ class Duckling(BaseTask):
             # for prop_type in ["stiffness", "damping", "friction", "armature", "velocity"]:
             for prop_type in ["friction", "armature"]:
                 if self._dof_props_config[dof_name].get(prop_type, None) is not None:
-                    dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type]
+                    factor = 1
+                    if self.randomize_joint_friction and prop_type == "friction":
+                        factor = self.random_friction_factors[env_id, i]
+                    dof_prop[prop_type][i] = self._dof_props_config[dof_name][prop_type] * factor
 
         self.gym.set_actor_dof_properties(env_ptr, duckling_handle, dof_prop)
         self.duckling_handles.append(duckling_handle)
