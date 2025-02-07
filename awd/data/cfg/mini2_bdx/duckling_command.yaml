@@ -21,10 +21,10 @@ env:
   rmaHistorySize: 20
   rmaEncLayers: [256, 128, 18]
 
-  pushRobots: False
+  pushRobots: True
   pushEveryNSeconds: 3 #s, push every N seconds
   continousPushSteps: 10 # push 10 times (not implemented)
-  maxPushVelXy: 0.3
+  maxPushVelXy: 0.2
 
   # COM and mass are randomized only once for each actor, but not at each reset
   randomizeCom: True
@@ -57,8 +57,8 @@ env:
   contactBodies: ["foot_assembly", "foot_assembly_2"]
   maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
   # maskJoints: []
-  # maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
-  maskJointRandomRange: [-0.5, 0.5] # Warning, this is multiplied by powerScale
+  maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
+  # maskJointRandomRange: [-0.5, 0.5] # Warning, this is multiplied by powerScale
   terminationHeight: -0.05
   initHeight: 0.19
   # initHeight: 0.4
