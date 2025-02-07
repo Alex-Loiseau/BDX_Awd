@@ -104,6 +104,9 @@ class Duckling(BaseTask):
         self.randomize_joint_angle_offsets = self.cfg["env"].get("randomizeJointAngleOffsets", False)
         self.max_joint_angle_offset = self.cfg["env"].get("maxJointAngleOffset", 0.0)
 
+        self.randomize_joint_friction = self.cfg["env"].get("randomizeJointFriction", False)
+        self.friction_multiplier_range = self.cfg["env"].get("frictionMultiplierRange", [1.0, 1.0])
+
         super().__init__(cfg=self.cfg)
 
         self.dt = self.control_freq_inv * sim_params.dt
@@ -594,9 +597,21 @@ class Duckling(BaseTask):
         if self.randomize_joint_angle_offsets:
             self.randomize_joint_angle_offset_values = torch_rand_float(-self.max_joint_angle_offset, self.max_joint_angle_offset, (self.num_envs, self.num_dof), device=self.device)
 
-        # object_rb_props = self.gym.get_actor_rigid_body_properties(self.envs[0], self.duckling_handles[0])
-        # masses = [prop.mass for prop in object_rb_props]
-        # print("masses:", masses)
+        if self.randomize_joint_friction:
+            self.random_friction_factors = torch_rand_float(self.friction_multiplier_range[0], self.friction_multiplier_range[1], (self.num_envs, self.num_dof), device=self.device)
+            dof_names = self.gym.get_asset_dof_names(duckling_asset)
+            dof_prop = self.gym.get_asset_dof_properties(duckling_asset)
+            
+            for env_i, handle in enumerate(self.duckling_handles):
+                for joint_i, dof_name in enumerate(dof_names):
+                    if dof_name not in self._dof_props_config:
+                        continue
+                    
+                    # randomize friction
+                    if self._dof_props_config[dof_name].get("friction", None) is not None:
+                        dof_prop["friction"][joint_i] = self._dof_props_config[dof_name]["friction"] * self.random_friction_factors[env_i, joint_i]
+
+                self.gym.set_actor_dof_properties(env_ptr, handle, dof_prop)
 
         return
 
@@ -819,6 +834,18 @@ class Duckling(BaseTask):
                 (
                     priv_dynamics_obs,
                     ((self.randomize_joint_angle_offset_values - joint_angle_offset_shift) * joint_angle_offset_scale).to(
+                        self.device
+                    ),
+                ),
+                dim=1,
+            )
+
+        if self.randomize_joint_friction:
+            joint_friction_scale, joint_friction_shift = get_scale_shift(self.friction_multiplier_range)
+            priv_dynamics_obs = torch.cat(
+                (
+                    priv_dynamics_obs,
+                    ((self.random_friction_factors - joint_friction_shift) * joint_friction_scale).to(
                         self.device
                     ),
                 ),

@@ -48,6 +48,8 @@ env:
   randomizeJointAngleOffsets: True
   maxJointAngleOffset: 0.018 # rad -> ~1° 
   # maxJointAngleOffset: 0.001 # rad -> ~1° 
+  randomizeJointFriction: False
+  frictionMultiplierRange: [0.95, 1.05]
 
   customControl: True
   useCustomDofVels: True
@@ -85,7 +87,8 @@ env:
     torqueRewardScale: -0.001
     feetAirTimeRewardScale: 1.0
     actionRateRewardScale: -0.1
-    standStillRewardScale: 0.0
+    standStillRewardScale: 0
+    # standStillRewardScale: -0.5
     footSlideRewardScale: -0.0005
 
     # normalization
@@ -99,9 +102,9 @@ env:
     yaw: [-0.5, 0.5] # min max [rad/s]
 
   # randomCommandVelocityRanges:
-  #   linear_x: [0.2, 0.2] # min max [m/s]
+  #   linear_x: [0.3, 0.3] # min max [m/s]
   #   linear_y: [0, 0] # min max [m/s]
-  #   yaw: [0, 0] # min max [rad/s]
+  #   yaw: [0.0, 0.0] # min max [rad/s]
 
   terrain:
     terrainType: plane # plane, or trimesh

@@ -152,8 +152,9 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
 
 
         # Penalize motion at zero commands
-        rew_standstill = (torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1) * (torch.norm(self.commands[:, :2], dim=1) < 0.05)) * self.rew_scales["standstill"]
-    
+        # rew_standstill = (torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1) * (torch.norm(self.commands[:, :2], dim=1) < 0.05)) * self.rew_scales["standstill"]
+        rew_standstill = (torch.sum(torch.abs(self.get_dof_vels()), dim=1) * (torch.norm(self.commands[:, :3], dim=1) < 0.05)) * self.rew_scales["standstill"]
+
         self.rew_buf[:] = torch.clip(rew_lin_vel_x + rew_lin_vel_y + rew_ang_vel_z + rew_torque, 0., None) + rew_action_rate + rew_airTime + rew_standstill + foot_slide_reward
 
         self.episode_reward_sums["lin_vel_x"] += rew_lin_vel_x
