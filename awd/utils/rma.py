@@ -1,39 +1,14 @@
 import torch.nn as nn
-# import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import utils.flatten as flatten
-# import pickle
-# import numpy as np
 import os
-
-# import onnxruntime
-
-
-# class OnnxInfer:
-#     def __init__(self, onnx_model_path, input_name="obs", awd=False):
-#         self.onnx_model_path = onnx_model_path
-#         self.ort_session = onnxruntime.InferenceSession(
-#             self.onnx_model_path, providers=["CPUExecutionProvider"]
-#         )
-#         self.input_name = input_name
-#         self.awd = awd
-
-#     def infer(self, inputs):
-#         if self.awd:
-#             outputs = self.ort_session.run(None, {self.input_name: [inputs]})
-#             return outputs[0][0]
-#         else:
-#             outputs = self.ort_session.run(
-#                 None, {self.input_name: inputs.astype("float32")}
-#             )
-#             return outputs[0]
 
 
 class RMA(nn.Module):
     def __init__(
-        self, rma_enc_layers, num_rma_obs, rma_history_size, num_obs, device, save_path
+        self, rma_enc_layers, num_rma_obs, rma_history_size, num_obs, device, save_path, freeze_encoder=False
     ):
         super().__init__()
 
@@ -42,6 +17,7 @@ class RMA(nn.Module):
         self.rma_history_size = rma_history_size
         self.num_obs = num_obs
         self.device = device
+        self.freeze_encoder = freeze_encoder
 
         self.steps = 0
         self.save_path = save_path
@@ -50,7 +26,7 @@ class RMA(nn.Module):
         rma_enc_dims = self.rma_enc_layers[:-1]
 
         # RMA encoder
-        self.rma_encoder = None
+        self.encoder = None
         activation = nn.ELU()
         rma_enc_layers = []
         rma_enc_layers.append(nn.Linear(self.num_rma_obs, rma_enc_dims[0]))
@@ -61,9 +37,9 @@ class RMA(nn.Module):
             else:
                 rma_enc_layers.append(nn.Linear(rma_enc_dims[l], rma_enc_dims[l + 1]))
                 rma_enc_layers.append(activation)
-        self.rma_encoder = nn.Sequential(*rma_enc_layers)
-        self.rma_encoder = self.rma_encoder.to(self.device)
-        print(f"Priv RMA MLP: {self.rma_encoder}")
+        self.encoder = nn.Sequential(*rma_enc_layers)
+        self.encoder = self.encoder.to(self.device)
+        print(f"Priv RMA MLP: {self.encoder}")
 
         # adaptation module
         self.adaptation_module = None
@@ -86,22 +62,35 @@ class RMA(nn.Module):
         self.adaptation_module_optimizer = optim.Adam(
             self.adaptation_module.parameters(), lr=self.adaptation_module_learning_rate
         )
-        self.num_adaptation_module_substeps = 1
+        self.num_adaptation_module_substeps = 5
+
+        if self.freeze_encoder:
+            self.encoder.requires_grad_(False)
+
+    # === DEBUG vv ===
+    def print_encoder_weights(self):
+        for name, param in self.encoder.named_parameters():
+            print(name, param)
+        print("==")
+
+    def print_adaptation_module_weights(self):
+        for name, param in self.adaptation_module.named_parameters():
+            print(name, param)
+        print("==")
+    # === DEBUG ^^ ===
 
     def learn(self, rma_obs, rma_history):
         # regress rma encoder to adaptation module
         self.steps += 1
         with torch.set_grad_enabled(True):  # not great, but will do
-
             # rma_obs shape : (num_envs, num_rma_obs)
             # rma_history shape : (num_envs, rma_history_size, num_obs)
             # input should be (batch, flattened input). batch is num_envs
-
             rma_history = rma_history.flatten(start_dim=1)
             for _ in range(self.num_adaptation_module_substeps):
                 adaptation_pred = self.adaptation_module(rma_history)
                 with torch.no_grad():
-                    adaptation_target = self.rma_encoder(rma_obs)
+                    adaptation_target = self.encoder(rma_obs)
 
                 adaptation_loss = F.mse_loss(adaptation_pred, adaptation_target)
                 # adaptation_loss.requires_grad = True  # why do i have to set this ?
@@ -129,11 +118,11 @@ class RMA(nn.Module):
     def save_encoder(self):
         path = os.path.join(self.save_path, "encoder.pth")
         print("Saving encoder to ", path)
-        torch.save(self.rma_encoder.state_dict(), path)
+        torch.save(self.encoder.state_dict(), path)
 
     def load_encoder(self, path):
         print("Loading encoder from", path)
-        self.rma_encoder.load_state_dict(torch.load(path))
+        self.encoder.load_state_dict(torch.load(path))
 
     def export_onnx(self, path):
 
@@ -170,14 +159,42 @@ class RMA(nn.Module):
             output_names=["latent"],
         )
 
+
+# import onnxruntime
+# class OnnxInfer:
+#     def __init__(self, onnx_model_path, input_name="obs", awd=False):
+#         self.onnx_model_path = onnx_model_path
+#         self.ort_session = onnxruntime.InferenceSession(
+#             self.onnx_model_path, providers=["CPUExecutionProvider"]
+#         )
+#         self.input_name = input_name
+#         self.awd = awd
+
+#     def infer(self, inputs):
+#         if self.awd:
+#             outputs = self.ort_session.run(None, {self.input_name: [inputs]})
+#             return outputs[0][0]
+#         else:
+#             outputs = self.ort_session.run(
+#                 None, {self.input_name: inputs.astype("float32")}
+#             )
+#             return outputs[0]
+
+
 # # DEBUG
 # if __name__ == "__main__":
+#     import matplotlib.pyplot as plt
+#     import pickle
+#     import numpy as np
+
 #     robot_saved_obs = pickle.load(open("../../robot_computed_obs.pkl", "rb"))
 #     isaac_saved_obs = pickle.load(open("../../isaac_saved_obs.pkl", "rb"))
-#     saved_obs = robot_saved_obs
-#     buffer_size = 50
+#     saved_obs = isaac_saved_obs
+#     buffer_size = 20
+#     num_rma_obs = 41
 
-#     rma = RMA([256, 128, 18], 22, 50, 56, "cpu", "/tmp")
+
+#     rma = RMA([256, 128, 18], num_rma_obs, buffer_size, 56, "cpu", "/tmp")
 #     rma.load_adaptation_module("../../adaptation_module.pth")
 #     rma.load_encoder("../../encoder.pth")
 #     adaptation_module_onnx = OnnxInfer(
@@ -203,8 +220,8 @@ class RMA(nn.Module):
 #     torch_latents = np.array(torch_latents)
 
 #     # plt.plot(onnx_latents, label="onnx")
-#     plt.ylim(-5, 5)
+#     plt.ylim(-0.6, 0.6)
 #     plt.plot(torch_latents, label="torch")
 #     plt.legend()
-#     plt.title("robot latent")
+#     plt.title("isaac latent")
 #     plt.show()

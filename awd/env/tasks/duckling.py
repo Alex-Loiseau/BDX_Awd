@@ -84,6 +84,7 @@ class Duckling(BaseTask):
         if self.rma_enabled:
             self.rma_history_size = self.cfg["env"].get("rmaHistorySize", 10)
             self.rma_enc_layers = self.cfg["env"].get("rmaEncLayers", 1)
+            self.post_train_rma = self.cfg["env"].get("postTrainRma", False)
 
         self.cfg["env"]["numObservations"] = self.get_obs_size()
         self.cfg["env"]["numActions"] = self.get_action_size()
@@ -269,10 +270,11 @@ class Duckling(BaseTask):
             # (num_envs, hist_size, num_obs + 3) # commands
             self.rma_obs_history_buffer = torch.zeros(self.num_envs, self.rma_history_size, total_num_obs, device=self.device, requires_grad=False)
             self.rma_save_path = "./"
-            self.rma = RMA(self.rma_enc_layers, self.get_privileged_dynamic_state().shape[1], self.rma_history_size, total_num_obs, self.device, self.rma_save_path)
+            self.rma = RMA(self.rma_enc_layers, self.get_privileged_dynamic_state().shape[1], self.rma_history_size, total_num_obs, self.device, self.rma_save_path, freeze_encoder=self.post_train_rma)
             if self.is_playing:
                 self.rma.load_encoder("encoder.pth")
-                self.rma.load_adaptation_module("adaptation_module.pth")
+                if not self.post_train_rma:
+                    self.rma.load_adaptation_module("adaptation_module.pth")
 
         if self.viewer != None:
             self._init_camera()
@@ -743,7 +745,9 @@ class Duckling(BaseTask):
         if not self.rma_enabled:
             return None
 
-        return self.rma.rma_encoder(self.get_privileged_dynamic_state())
+        # return (torch.rand(self.num_envs, self.rma_enc_layers[-1], device=self.device) - 0.5) *2
+        # return torch.ones(self.num_envs, self.rma_enc_layers[-1], device=self.device)
+        return self.rma.encoder(self.get_privileged_dynamic_state())
 
     # RMA
     def get_privileged_dynamic_state(self):
@@ -1040,7 +1044,7 @@ class Duckling(BaseTask):
             for i in range(self.rma_history_size-1, 0, -1):
                 self.rma_obs_history_buffer[:, i, :] = self.rma_obs_history_buffer[:, i-1, :]
             self.rma_obs_history_buffer[:, 0, :] = self.rma_obs_buf
-            if not self.is_playing:
+            if not self.is_playing or self.post_train_rma:
                 self.rma.learn(self.get_privileged_dynamic_state(), self.rma_obs_history_buffer)
 
         # self.saved_obs.append(self.rma_obs_buf[0].cpu().numpy())
