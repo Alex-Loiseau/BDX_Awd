@@ -150,10 +150,10 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         foot_vel = self._rigid_body_vel[:, self._contact_body_ids, :2]
         foot_slide_reward = torch.sum(foot_vel.norm(dim=-1) * contact, dim=1) * self.rew_scales["foot_slide"]
 
-
-        # Penalize motion at zero commands
-        # rew_standstill = (torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1) * (torch.norm(self.commands[:, :2], dim=1) < 0.05)) * self.rew_scales["standstill"]
-        rew_standstill = (torch.sum(torch.abs(self.get_dof_vels()), dim=1) * (torch.norm(self.commands[:, :3], dim=1) < 0.05)) * self.rew_scales["standstill"]
+        # Penalize motion at zero commands, and encourage being close to the default position
+        rew_standstill = (torch.sum(torch.abs(self.get_dof_vels()), dim=1) * (torch.norm(self.commands[:, :3], dim=1) < 0.05))
+        rew_standstill += (torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1) * (torch.norm(self.commands[:, :3], dim=1) < 0.05))
+        rew_standstill *= self.rew_scales["standstill"]
 
         self.rew_buf[:] = torch.clip(rew_lin_vel_x + rew_lin_vel_y + rew_ang_vel_z + rew_torque, 0., None) + rew_action_rate + rew_airTime + rew_standstill + foot_slide_reward
 
