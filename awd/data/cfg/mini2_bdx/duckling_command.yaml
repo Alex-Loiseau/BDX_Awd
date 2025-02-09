@@ -25,32 +25,25 @@ env:
   pushRobots: True
   pushEveryNSeconds: 3 #s, push every N seconds
   continousPushSteps: 10 # push 10 times (not implemented)
-  maxPushVelXy: 0.4
+  maxPushVelXy: 0.2
 
   # COM and mass are randomized only once for each actor, but not at each reset
   randomizeCom: True
   comRandomizeRange: [-0.05, 0.05] # kg
-  # comRandomizeRange: [-0.01, 0.01] # kg
   randomizeTorques: True
-  torqueMultiplierRange: [0.90, 1.1]
-  # torqueMultiplierRange: [0.99, 1.01]
+  torqueMultiplierRange: [0.95, 1.05]
   randomizeBaseMass: True
-  massMultiplierRange: [0.9, 1.1]
-  # massMultiplierRange: [0.99, 1.01]
+  massMultiplierRange: [0.95, 1.05]
   randomizeActionDelay: True
   maxActionDelay: 0.05 # s, 50ms
-  # maxActionDelay: 0.005 # s, 50ms
   randomizeImuDelay: True
   maxImuDelay: 0.05 # s, 50ms
-  # maxImuDelay: 0.005 # s, 50ms
   randomizeImuOrientation: True
   maxImuOrientation: 0.035 # rad -> ~2°
-  # maxImuOrientation: 0.001 # rad -> ~2°
   randomizeJointAngleOffsets: True
   maxJointAngleOffset: 0.018 # rad -> ~1° 
-  # maxJointAngleOffset: 0.001 # rad -> ~1° 
   randomizeJointFriction: True
-  frictionMultiplierRange: [0.9, 1.1]
+  frictionMultiplierRange: [0.95, 1.05]
 
   customControl: True
   useCustomDofVels: True
@@ -61,7 +54,7 @@ env:
   maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
   # maskJoints: []
   # maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
-  maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
+  maskJointRandomRange: [-0.5, 0.5] # Warning, this is multiplied by powerScale
   terminationHeight: -0.05
   initHeight: 0.19
   # initHeight: 0.4
@@ -107,7 +100,7 @@ env:
   #   yaw: [0.0, 0.0] # min max [rad/s]
 
   terrain:
-    terrainType: trimesh # plane, or trimesh
+    terrainType: plane # plane, or trimesh
     staticFriction: 1.0 # [-]
     dynamicFriction: 1.0 # [-]
     restitution: 0. # [-]
@@ -137,7 +130,7 @@ sim:
   substeps: 1
   physx:
     num_threads: 4
-    solver_type: 1 # 0: pgs, 1: tgs
+    solver_type: 0 # 0: pgs, 1: tgs
     # num_position_iterations: 4
     # num_velocity_iterations: 1
     # contact_offset: 0.02
