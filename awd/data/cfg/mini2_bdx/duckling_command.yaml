@@ -7,8 +7,8 @@ env:
   enableDebugVis: False
 
   pdControl: False
-  # powerScale: 1.0
-  powerScale: 0.25
+  powerScale: 1.0
+  # powerScale: 0.25
   controlFrequencyInv: 4
   stateInit: "Hybrid"
   hybridInitProb: 0.5
@@ -16,42 +16,42 @@ env:
   numAMPObsSteps: 20
 
   # RMA
-  rmaEnabled: False
+  rmaEnabled: True
   # rmaHistorySize: 50
   rmaHistorySize: 30
   rmaEncLayers: [256, 128, 18]
   postTrainRma: False
 
-  pushRobots: False
+  pushRobots: True
   pushEveryNSeconds: 3 #s, push every N seconds
   continousPushSteps: 10 # push 10 times (not implemented)
-  maxPushVelXy: 0.3
+  maxPushVelXy: 0.2
 
   # COM and mass are randomized only once for each actor, but not at each reset
   randomizeCom: True
-  # comRandomizeRange: [-0.05, 0.05] # kg
-  comRandomizeRange: [-0.01, 0.01] # kg
+  comRandomizeRange: [-0.05, 0.05] # kg
+  # comRandomizeRange: [-0.01, 0.01] # kg
   randomizeTorques: True
-  # torqueMultiplierRange: [0.95, 1.05]
-  torqueMultiplierRange: [0.99, 1.01]
+  torqueMultiplierRange: [0.95, 1.05]
+  # torqueMultiplierRange: [0.99, 1.01]
   randomizeBaseMass: True
-  # massMultiplierRange: [0.95, 1.05]
-  massMultiplierRange: [0.99, 1.01]
+  massMultiplierRange: [0.95, 1.05]
+  # massMultiplierRange: [0.99, 1.01]
   randomizeActionDelay: True
-  # maxActionDelay: 0.05 # s, 50ms
-  maxActionDelay: 0.01 # s, 50ms
+  maxActionDelay: 0.05 # s, 50ms
+  # maxActionDelay: 0.01 # s, 50ms
   randomizeImuDelay: True
-  # maxImuDelay: 0.05 # s, 50ms
-  maxImuDelay: 0.01 # s, 50ms
+  maxImuDelay: 0.05 # s, 50ms
+  # maxImuDelay: 0.01 # s, 50ms
   randomizeImuOrientation: True
-  # maxImuOrientation: 0.035 # rad -> ~2°
-  maxImuOrientation: 0.01 # rad -> ~2°
+  maxImuOrientation: 0.035 # rad -> ~2°
+  # maxImuOrientation: 0.01 # rad -> ~2°
   randomizeJointAngleOffsets: True
-  # maxJointAngleOffset: 0.018 # rad -> ~1° 
-  maxJointAngleOffset: 0.005 # rad -> ~1°     
+  maxJointAngleOffset: 0.018 # rad -> ~1° 
+  # maxJointAngleOffset: 0.005 # rad -> ~1°     
   randomizeJointFriction: True
-  # frictionMultiplierRange: [0.95, 1.05]
-  frictionMultiplierRange: [0.99, 1.01]
+  frictionMultiplierRange: [0.95, 1.05]
+  # frictionMultiplierRange: [0.99, 1.01]
 
   customControl: True
   useCustomDofVels: True
