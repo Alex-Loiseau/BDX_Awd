@@ -23,7 +23,7 @@ dof_offsets: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 dof_obs_size: 16
 num_obs: 53
 num_actions: 16
-num_amp_obs_per_step: 45 # head masked 45, normal 53
+num_amp_obs_per_step: 41 # head masked 45, normal 53
 
 # {
 #   "daamping": 0,
