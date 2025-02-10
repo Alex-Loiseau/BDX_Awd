@@ -1317,44 +1317,44 @@ class Duckling(BaseTask):
         self.obs_imu_latency_buffer[:,:,0] = torch.cat((self.projected_gravity, self._rigid_body_ang_vel[:, 0, :]), 1).clone()
 
 
-@torch.jit.script
-def compute_duckling_observations(
-    root_pos,
-    root_rot,
-    root_vel,
-    root_ang_vel,
-    dof_pos,
-    dof_vel,
-    key_body_pos,
-    local_root_obs,
-    root_height_obs,
-    dof_obs_size,
-    dof_offsets,
-    dof_axis,
-    projected_gravity,
-    foot_contacts,
-):
-    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, int, List[int], List[int], Tensor, Tensor) -> Tensor
-    # realistic observations
+# @torch.jit.script
+# def compute_duckling_observations(
+#     root_pos,
+#     root_rot,
+#     root_vel,
+#     root_ang_vel,
+#     dof_pos,
+#     dof_vel,
+#     key_body_pos,
+#     local_root_obs,
+#     root_height_obs,
+#     dof_obs_size,
+#     dof_offsets,
+#     dof_axis,
+#     projected_gravity,
+#     foot_contacts,
+# ):
+#     # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, int, List[int], List[int], Tensor, Tensor) -> Tensor
+#     # realistic observations
 
-    heading_rot = torch_utils.calc_heading_quat_inv(root_rot)
-    # local_root_vel = quat_rotate(heading_rot, root_vel)
-    local_root_ang_vel = quat_rotate(heading_rot, root_ang_vel)
+#     heading_rot = torch_utils.calc_heading_quat_inv(root_rot)
+#     # local_root_vel = quat_rotate(heading_rot, root_vel)
+#     local_root_ang_vel = quat_rotate(heading_rot, root_ang_vel)
     
-    obs = torch.cat(
-        (
-            projected_gravity,
-            dof_pos,
-            dof_vel,
-            foot_contacts,
-            # local_root_vel,
-            local_root_ang_vel,
-            # local_root_obs,
-            # root_height_obs,
-        ),
-        dim=-1,
-    )
-    return obs
+#     obs = torch.cat(
+#         (
+#             projected_gravity,
+#             dof_pos,
+#             dof_vel,
+#             foot_contacts,
+#             # local_root_vel,
+#             local_root_ang_vel,
+#             # local_root_obs,
+#             # root_height_obs,
+#         ),
+#         dim=-1,
+#     )
+#     return obs
 
 class Terrain:
     def __init__(self, cfg, num_robots) -> None:
@@ -1775,5 +1775,4 @@ def compute_duckling_reset(reset_buf, progress_buf, contact_buf, contact_body_id
         terminated = torch.where(has_fallen, torch.ones_like(reset_buf), terminated)
 
     reset = torch.where(progress_buf >= max_episode_length - 1, torch.ones_like(reset_buf), terminated)
-
     return reset, terminated

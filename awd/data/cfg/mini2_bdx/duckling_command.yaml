@@ -70,6 +70,8 @@ env:
   randomizeMaskJoints: True
   commandChangeStepsMin: 70 #s
   commandChangeStepsMax: 80 #s
+  # commandChangeStepsMin: 1000 #s
+  # commandChangeStepsMax: 1001 #s
   period: 0.43 # 0.66 ?
 
   actionHistoryInputs: 0
@@ -110,8 +112,8 @@ env:
     # standStillRewardScale: -0.0
 
     # normalization
-    linearVelocityScale: [2.0, 2.0]
-    angularVelocityScale: 0.25
+    linearVelocityScale: [1.0, 1.0]
+    angularVelocityScale: 1.0
     useAverageVelocities: True
 
   # randomCommandVelocityRanges:

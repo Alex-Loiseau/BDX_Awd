@@ -408,8 +408,11 @@ class BaseTask():
     def pre_physics_step(self, actions):
         raise NotImplementedError
 
-    def _physics_step(self):
 
+    def _physics_step(self):
+        for i in range(self.control_freq_inv):
+            self.render()
+            self.gym.simulate(self.sim)
         return
 
     def post_physics_step(self):
