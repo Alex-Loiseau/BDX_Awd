@@ -746,6 +746,7 @@ class AMPAgent(common_agent.CommonAgent):
         self.writer.add_scalar('info/disc_demo_logit', torch_ext.mean_list(train_info['disc_demo_logit']).item(), frame)
         self.writer.add_scalar('info/disc_grad_penalty', torch_ext.mean_list(train_info['disc_grad_penalty']).item(), frame)
         self.writer.add_scalar('info/disc_logit_loss', torch_ext.mean_list(train_info['disc_logit_loss']).item(), frame)
+        self.writer.add_scalar('info/learning_rate', self.last_lr, frame)
 
         episode_rewards = train_info.get("episode", None)
         if episode_rewards:

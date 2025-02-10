@@ -57,7 +57,8 @@ params:
     gamma: 0.95
     tau: 0.95
     learning_rate: 4e-5 # overwritten if adaptive lr_schedule
-    lr_schedule: adaptive # constant
+    # lr_schedule: adaptive # constant
+    lr_schedule: constant # constant
     kl_threshold: 0.008 # target kl for adaptive lr
     score_to_win: 20000
     max_epochs: 100000
