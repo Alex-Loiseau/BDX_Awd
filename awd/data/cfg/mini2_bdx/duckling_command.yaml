@@ -54,7 +54,7 @@ env:
   maskJoints: ["neck_pitch", "head_pitch", "head_yaw", "head_roll"]
   # maskJoints: []
   # maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
-  maskJointRandomRange: [-1, 1] # Warning, this is multiplied by powerScale
+  maskJointRandomRange: [-0, 0] # Warning, this is multiplied by powerScale
   terminationHeight: -0.05
   initHeight: 0.19
   # initHeight: 0.4
