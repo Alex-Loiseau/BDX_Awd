@@ -25,7 +25,7 @@ env:
   pushRobots: True
   pushEveryNSeconds: 3 #s, push every N seconds
   continousPushSteps: 10 # push 10 times (not implemented)
-  maxPushVelXy: 0.2
+  maxPushVelXy: 0.3
 
   # COM and mass are randomized only once for each actor, but not at each reset
   randomizeCom: True
