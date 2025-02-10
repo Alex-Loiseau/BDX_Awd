@@ -28,7 +28,7 @@ env:
   # maxPushVelXy: 0.4
 
   # Mansin
-  pushRobots: True
+  pushRobots: False
   pushStep: 3 #s
   pushStepRandomRange: 1 #s | push works at pushStep +- pushStepRandomRange
   continousPushSteps: 10
