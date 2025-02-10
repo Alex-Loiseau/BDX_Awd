@@ -184,6 +184,45 @@ dof_props:
       "p_gain": 0.1,
       "d_gain": 0.65,
     }
+  head_roll:
+    {
+      "damping": 1.0,
+      "stiffness": 5,
+      "friction": 0.03,
+      "armature": 0.0056,
+      "velocity": 300,
+      "max_effort": 100,
+      "init_pos": 0.000,
+      "motor_efforts": 10,
+      "p_gain": 5.68,
+      "d_gain": 0.1,
+    }
+  left_antenna:
+    {
+      "damping": 1.0,
+      "stiffness": 5,
+      "friction": 0.03,
+      "armature": 0.0056,
+      "velocity": 300,
+      "max_effort": 100,
+      "init_pos": 0.000,
+      "motor_efforts": 10,
+      "p_gain": 5.68,
+      "d_gain": 0.1,
+    }
+  right_antenna:
+    {
+      "damping": 1.0,
+      "stiffness": 5,
+      "friction": 0.03,
+      "armature": 0.0056,
+      "velocity": 300,
+      "max_effort": 100,
+      "init_pos": 0.000,
+      "motor_efforts": 10,
+      "p_gain": 5.68,
+      "d_gain": 0.1,
+    }
   right_hip_yaw:
     {
       "damping": 0.0,

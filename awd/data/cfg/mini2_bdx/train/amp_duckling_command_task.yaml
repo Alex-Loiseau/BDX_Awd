@@ -24,6 +24,7 @@ params:
         learn_sigma: False
 
     mlp:
+      # units: [1024, 512, 256] # Mansin
       units: [512, 512, 512]
       activation: elu
       d2rl: False
@@ -33,6 +34,7 @@ params:
       regularizer:
         name: None
     disc:
+      # units: [1024, 512, 256] # Mansin
       units: [1024, 512]
       activation: relu
 

@@ -30,7 +30,6 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         self.rew_scales["standstill"] = self.cfg["env"]["learn"]["standStillRewardScale"]
         self.rew_scales["foot_slide"] = self.cfg["env"]["learn"]["footSlideRewardScale"]
 
-
         # reward episode sums
         self.episode_reward_sums = {name: torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
                              for name in self.rew_scales.keys()}
@@ -40,8 +39,8 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         self.randomize = self.cfg["task"]["randomize"]
         self._command_change_steps = self.cfg["task"]["randomize"]
 
-        self._command_change_steps_min = cfg["env"]["commandChangeStepsMin"]
-        self._command_change_steps_max = cfg["env"]["commandChangeStepsMax"]
+        self._command_change_steps_min = int(cfg["env"]["commandChangeStepsMin"] / self.control_dt)
+        self._command_change_steps_max = int(cfg["env"]["commandChangeStepsMax"] / self.control_dt)
         self._command_change_steps = torch.zeros([self.num_envs], device=self.device, dtype=torch.int64)
 
         # command ranges
@@ -54,8 +53,8 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         # for key in self.rew_scales.keys():
         #      self.rew_scales[key] *= self.dt
 
-        self.rew_scales["torque"] *= self.dt
-        self.rew_scales["action_rate"] *= self.dt
+        self.rew_scales["torque"] *= self.control_dt
+        self.rew_scales["action_rate"] *= self.control_dt
 
         # rename variables to maintain consistency with anymal env
         self.root_states = self._root_states
@@ -63,7 +62,6 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         self.dof_pos = self._dof_pos
         self.dof_vel = self._dof_vel
         self.contact_forces = self._contact_forces
-        self.torques = self.dof_force_tensor
 
         self.commands = torch.zeros(self.num_envs, 3, dtype=torch.float, device=self.device, requires_grad=False)
         self.commands_x = self.commands.view(self.num_envs, 3)[..., 0]
@@ -138,10 +136,13 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         
         contact = self.contact_forces[:, self._contact_body_ids, 2] > 1.
         first_contact = (self.feet_air_time > 0.) * contact
-        self.feet_air_time += self.dt
+        self.feet_air_time += self.control_dt
         rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1) * self.rew_scales["air_time"] # reward only on first contact with the ground
         #rew_airTime *= torch.norm(self.commands, dim=1) > 0.1 #no reward for zero command
         self.feet_air_time *= ~contact
+
+        foot_vel = self._rigid_body_vel[:, self._contact_body_ids, :2]
+        foot_slide_reward = torch.sum(foot_vel.norm(dim=-1) * contact, dim=1) * self.rew_scales["foot_slide"]
 
         # action rate penalty
         rew_action_rate = torch.sum(torch.square(self.last_actions - self.actions), dim=1) * self.rew_scales["action_rate"]
@@ -165,7 +166,6 @@ class DucklingCommand(duckling_amp_task.DucklingAMPTask):
         self.episode_reward_sums["action_rate"] += rew_action_rate
         self.episode_reward_sums["standstill"] += rew_standstill
         self.episode_reward_sums["foot_slide"] += foot_slide_reward
-
         return
 
 #####################################################################

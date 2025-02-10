@@ -29,6 +29,7 @@
 import numpy as np
 import os
 import torch
+import time
 import yaml
 import xml.etree.ElementTree as ET
 
@@ -48,6 +49,8 @@ class Duckling(BaseTask):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
         self.cfg = cfg
         self.sim_params = sim_params
+        self.sim_dt = sim_params.dt
+        self.control_dt = self.cfg["env"]["controlFrequencyInv"] * sim_params.dt   
         self.physics_engine = physics_engine
         self.asset_properties = None
         self._dof_axis = None
@@ -67,8 +70,8 @@ class Duckling(BaseTask):
         self.plane_dynamic_friction = self.cfg["env"]["terrain"]["dynamicFriction"]
         self.plane_restitution = self.cfg["env"]["terrain"]["restitution"]
 
-        self.max_episode_length = self.cfg["env"]["episodeLength"]
-        self.max_episode_length_s = self.max_episode_length * sim_params.dt
+        self.max_episode_length_s = self.cfg["env"]["episodeLength"]
+        self.max_episode_length = int(self.max_episode_length_s / self.control_dt)  # in steps 
         self._local_root_obs = self.cfg["env"]["localRootObs"]
         self._root_height_obs = self.cfg["env"].get("rootHeightObs", True)
         self._randomize_mask_joints = self.cfg["env"].get("randomizeMaskJoints", False)
@@ -85,6 +88,11 @@ class Duckling(BaseTask):
             self.rma_history_size = self.cfg["env"].get("rmaHistorySize", 10)
             self.rma_enc_layers = self.cfg["env"].get("rmaEncLayers", 1)
             self.post_train_rma = self.cfg["env"].get("postTrainRma", False)
+            
+        self._num_action_history_inputs = self.cfg["env"].get("actionHistoryInputs", 1)
+        self._action_history_inputs_decimation = self.cfg["env"].get("actionHistoryInputsDecimation", 1)
+        self._num_obs_history_inputs = self.cfg["env"].get("obsHistoryInputs", 1)
+        self._obs_history_inputs_decimation = self.cfg["env"].get("obsHistoryInputsDecimation", 1)
 
         self.cfg["env"]["numObservations"] = self.get_obs_size()
         self.cfg["env"]["numActions"] = self.get_action_size()
@@ -140,6 +148,11 @@ class Duckling(BaseTask):
         self.max_v = 0
         self.min_v = 10000
 
+        self.obs_history = torch.zeros(self.num_envs, (self.get_obs_size_per_step()), self._num_obs_history_inputs//self._obs_history_inputs_decimation, 
+                                          dtype=torch.float, device=self.device, requires_grad=False)
+        self.action_history = torch.zeros(self.num_envs, (self.num_actions), self._num_action_history_inputs//self._action_history_inputs_decimation, 
+                                          dtype=torch.float, device=self.device, requires_grad=False)
+        
         # get gym GPU state tensors
         #self.gym.refresh_actor_root_state_tensor(self.sim)
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
@@ -230,16 +243,19 @@ class Duckling(BaseTask):
             else:
                 self._mask_joint_values = torch.zeros(self.num_envs, len(self._mask_joint_ids), device=self.device)
 
+        
+        self.torques = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
         self.last_contacts = torch.zeros(self.num_envs, len(self._key_body_ids), dtype=torch.bool, device=self.device, requires_grad=False)
         self.feet_air_time = torch.zeros(self.num_envs, self._key_body_ids.shape[0], dtype=torch.float, device=self.device, requires_grad=False)
         self.actions = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
         self.last_actions = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
 
         self.period = self.cfg["env"].get("period", 0.6)
-        self.num_steps_per_period = int(self.period / self.dt)
+        self.num_steps_per_period = int(self.period / self.control_dt)
 
         self.velocities_history = torch.zeros(self.num_envs, 6 * self.num_steps_per_period, dtype=torch.float, device=self.device, requires_grad=False)
         self.avg_velocities = torch.zeros(self.num_envs, 6, dtype=torch.float, device=self.device, requires_grad=False)
+
 
         self.gravity_vec = to_torch(
             get_axis_params(-1.0, self.up_axis_idx), device=self.device
@@ -247,8 +263,17 @@ class Duckling(BaseTask):
 
         self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec)
 
-        self.push_robots_flag = self.cfg["env"].get("pushRobots", False)
-        self.continous_push_steps = self.cfg["env"].get("continousPushSteps", 10)
+        # Mine
+        # self.push_robots_flag = self.cfg["env"].get("pushRobots", False)
+        # self.continous_push_steps = self.cfg["env"].get("continousPushSteps", 10)
+
+        # Mansin's
+        self.common_step_counter = 0
+        self._push_robots_flag = self.cfg["env"].get("pushRobots", False)
+        self._push_step_interval = int(self.cfg["env"].get("pushStep", 2) / self.control_dt)
+        self._push_step_range = int(self.cfg["env"].get("pushStepRandomRange", 1) / self.control_dt)
+        self._continous_push_steps = self.cfg["env"].get("continousPushSteps", 10)
+        self._push_step = torch.randint(self._push_step_interval-self._push_step_range, self._push_step_interval+self._push_step_range, (self.num_envs,), device=self.device)
         self.max_push_vel = self.cfg["env"].get("maxPushVelXy", 0.5)
         self.push_vels = torch_rand_float(-self.max_push_vel, self.max_push_vel, (self.num_envs, 2), device=self.device)  # lin vel x/y
         self.push_timer = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
@@ -276,6 +301,24 @@ class Duckling(BaseTask):
                 if not self.post_train_rma:
                     self.rma.load_adaptation_module("adaptation_module.pth")
 
+        
+        self.add_obs_noise = self.cfg["task"].get("observation_randomizations", {}).get("enable", False)
+        if self.add_obs_noise:
+            self.obs_noise_vec = self._get_obs_noise_scale_vec(self.cfg["task"]["observation_randomizations"])
+
+        # if self.cfg["task"].get("add_obs_latency", False):
+        #     self.obs_motor_latency_buffer = torch.zeros(self.num_envs, self.num_actions * 2, int(self.cfg["task"]["range_obs_motor_latency"][1]/(1000*self.sim_dt))+1,device=self.device)
+        #     self.obs_imu_latency_buffer = torch.zeros(self.num_envs, 6, int(self.cfg["task"]["range_obs_imu_latency"][1]/(1000*self.sim_dt))+1,device=self.device)
+            
+        #     self.obs_motor_latency_simstep = torch.zeros(self.num_envs, dtype=torch.long, device=self.device) 
+        #     self.obs_imu_latency_simstep = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
+        
+        # if self.cfg["task"].get("add_action_latency", False):
+        #     self.action_latency_buffer = torch.zeros(self.num_envs, self.num_actions, (int(self.cfg["task"]["range_action_latency"][1]/(1000*self.sim_dt)))+1,device=self.device)
+        #     self.action_latency_simstep = torch.zeros(self.num_envs, dtype=torch.long, device=self.device) 
+        
+        # self._reset_latency_buffer(torch.arange(self.num_envs, device=self.device))
+   
         if self.viewer != None:
             self._init_camera()
 
@@ -290,6 +333,14 @@ class Duckling(BaseTask):
         else:
             return self._num_obs
 
+        # TODO if obs history is activated
+        return self._num_obs*self._num_obs_history_inputs + self._num_actions*self._num_action_history_inputs
+
+    def get_obs_size_per_step(self):
+        return self._num_obs
+    
+    def get_task_obs_size(self):
+        return 0
 
     def get_action_size(self):
         return self._num_actions
@@ -352,7 +403,13 @@ class Duckling(BaseTask):
         self.actions[env_ids] = 0.
         self.avg_velocities[env_ids] = 0.
 
-        if self.push_robots_flag:
+        # Mansin
+        self.action_history[env_ids] = 0.
+        self.obs_history[env_ids] = 0.
+
+        # if self.push_robots_flag:
+        if self._push_robots_flag:
+            self._push_step[env_ids] = torch.randint(self._push_step_interval-self._push_step_range, self._push_step_interval+self._push_step_range, (len(env_ids),), device=self.device)
             self._push_vels = torch_rand_float(-self.max_push_vel, self.max_push_vel, (self.num_envs, 2), device=self.device)  # lin vel x/y
 
         if self.randomize_torques:
@@ -853,6 +910,22 @@ class Duckling(BaseTask):
 
     def _compute_duckling_obs(self, env_ids=None):
         foot_contacts = self._contact_forces[:, self._contact_body_ids, 2] > 1.
+        
+        if self.cfg["task"]["add_obs_latency"]:
+            obs_motors = self.obs_motor_latency_buffer[torch.arange(self.num_envs), :, self.obs_motor_latency_simstep]
+            dof_pos = obs_motors[:, :self.num_actions]
+            dof_vel = obs_motors[:, self.num_actions:]
+
+            obs_imu = self.obs_imu_latency_buffer[torch.arange(self.num_envs), :, self.obs_imu_latency_simstep]
+            projected_gravity = obs_imu[:, :3]
+            root_ang_vel = obs_imu[:, 3:]
+        else:            
+            dof_pos = self._dof_pos
+            dof_vel = self._dof_vel
+            
+            projected_gravity = self.projected_gravity
+            root_ang_vel = self._rigid_body_ang_vel[:, 0, :]
+                
         if (env_ids is None):
             key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
             obs = compute_duckling_observations(self._rigid_body_pos[:, 0, :],
@@ -979,6 +1052,19 @@ class Duckling(BaseTask):
                 force_tensor[:, self._mask_joint_ids] = self._mask_joint_values
             self.gym.set_dof_actuation_force_tensor(self.sim, force_tensor)
 
+            self.gym.simulate(self.sim)
+            if self.cfg["args"].test:
+                elapsed_time = self.gym.get_elapsed_time(self.sim)
+                sim_time = self.gym.get_sim_time(self.sim)
+                if sim_time-elapsed_time>0:
+                    time.sleep(sim_time-elapsed_time)
+            if self.device == 'cpu':
+                self.gym.fetch_results(self.sim, True)
+            self.gym.refresh_dof_state_tensor(self.sim)
+            self.projected_gravity = quat_rotate_inverse(self._duckling_root_states[:, 3:7], self.gravity_vec) # update imu at simulation freq.
+
+            if self.cfg["task"]["add_obs_latency"]:
+                self.update_obs_latency_buffer()
         return
 
     def _physics_step(self):
@@ -993,15 +1079,12 @@ class Duckling(BaseTask):
         # Computing average velocities over the last gait
         # Shift back.
         self.velocities_history[:, : 6 * (self.num_steps_per_period - 1)] = self.velocities_history[:, 6 : 6 * self.num_steps_per_period]
-
         # add
         self.velocities_history[:, -6:] = self._duckling_root_states[:, 7:13]
-
         # reshape velocities_history so that its (num_envs, num_steps_per_period, 6)
         self.velocities_history_reshaped = self.velocities_history.view(
             self.num_envs, self.num_steps_per_period, 6
         )
-
         # Compute average velocities for each environment
         self.avg_velocities = torch.mean(self.velocities_history_reshaped, dim=1)
 
@@ -1018,13 +1101,22 @@ class Duckling(BaseTask):
         if self.viewer and self.debug_viz:
             self._update_debug_viz()
 
-        # push robots
-        if self.push_robots_flag:
-            self.push_timer[:] += self.dt
-            envs_to_push = (self.push_timer > self.push_every_n_seconds).flatten().nonzero(as_tuple=False).flatten()
-            if len(envs_to_push) > 0:
-                self._push_robots(envs_to_push)
-                self.push_timer[envs_to_push] = 0
+        # Mine
+        # if self.push_robots_flag:
+        #     self.push_timer[:] += self.dt
+        #     envs_to_push = (self.push_timer > self.push_every_n_seconds).flatten().nonzero(as_tuple=False).flatten()
+        #     if len(envs_to_push) > 0:
+        #         self._push_robots(envs_to_push)
+        #         self.push_timer[envs_to_push] = 0
+        
+        # Mansin's
+        if self._push_robots_flag:
+            push_mask = (self.progress_buf >= self._push_step) & ((self.progress_buf) <= (self._push_step + self._continous_push_steps))
+            push_env_ids = push_mask.nonzero(as_tuple=False).flatten()
+            update_push_step_mask = self.progress_buf == (self._push_step + self._continous_push_steps)
+            self._push_step[update_push_step_mask] += self._push_step_interval
+            if len(push_env_ids) > 0:
+                self._push_robots(push_env_ids)            
 
         # RMA
         # WARNING Most recent is first
@@ -1044,16 +1136,12 @@ class Duckling(BaseTask):
 
     def get_projected_gravity(self):
         if self.randomize_imu_delay:
-            # same index for all envs for now
-            # self.imu_random_index = torch.randint(0, self.imu_delay_buffer_size, (1,), device=self.device)
             return self.imu_delay_buffer[torch.arange(self.num_envs), self.imu_random_indices, :]
         else:
             return self.projected_gravity
 
     def get_actions(self):
         if self.randomize_action_delay:
-            # same index for all envs for now
-            # self.actions_random_index = torch.randint(0, self.action_delay_buffer_size, (1,), device=self.device)
             return self.action_delay_buffer[torch.arange(self.num_envs), self.actions_random_indices, :]
         else:
             return self.actions
@@ -1168,10 +1256,105 @@ class Duckling(BaseTask):
         # self.terrain_levels[env_ids] += 1 * (distance > self.terrain.env_length / 2)
         # self.terrain_levels[env_ids] = torch.clip(self.terrain_levels[env_ids], 0) % self.terrain.env_rows
         # self.env_origins[env_ids] = self.terrain_origins[self.terrain_levels[env_ids], self.terrain_types[env_ids]]
-
+    
     def _update_debug_viz(self):
         self.gym.clear_lines(self.viewer)
         return
+
+    def _get_obs_noise_scale_vec(self, noise_cfg):
+        noise_vec = torch.zeros(self.get_obs_size_per_step(), device=self.device)
+        idx = 0
+        noise_vec[idx:idx+3] = noise_cfg["gravity_noise"]
+        idx += 3
+        noise_vec[idx:idx+self.num_dof] = noise_cfg["dof_pos_noise"]
+        idx += self.num_dof
+        noise_vec[idx:idx+self.num_dof] = noise_cfg["dof_vel_noise"]
+        idx += self.num_dof
+        noise_vec[idx:idx+3] = noise_cfg["ang_vel_noise"]
+        idx += 3
+
+        return noise_vec
+
+    def _reset_latency_buffer(self, env_ids):
+        if self.cfg["task"]["add_action_latency"]:   
+            self.action_latency_buffer[env_ids, :, :] = 0.0
+            if self.cfg["task"]["randomize_action_latency"]:
+                self.action_latency_simstep[env_ids] = torch.randint((int(self.cfg["task"]["range_action_latency"][0]/(1000*self.sim_dt))), 
+                                                           (int(self.cfg["task"]["range_action_latency"][1]/(1000*self.sim_dt)))+1,(len(env_ids),),device=self.device) 
+            else:
+                self.action_latency_simstep[env_ids] = (int(self.cfg["task"]["range_action_latency"][1]/(1000*self.sim_dt)))
+                               
+        if self.cfg["task"]["add_obs_latency"]:
+            self.obs_motor_latency_buffer[env_ids, :, :] = 0.0
+            self.obs_imu_latency_buffer[env_ids, :, :] = 0.0
+            if self.cfg["task"]["randomize_obs_motor_latency"]:
+                self.obs_motor_latency_simstep[env_ids] = torch.randint(int(self.cfg["task"]["range_obs_motor_latency"][0]/(1000*self.sim_dt)),
+                                                        int(self.cfg["task"]["range_obs_motor_latency"][1]/(1000*self.sim_dt))+1, (len(env_ids),),device=self.device)
+            else:
+                self.obs_motor_latency_simstep[env_ids] = int(self.cfg["task"]["range_obs_motor_latency"][1]/(1000*self.sim_dt))
+
+            if self.cfg["task"]["randomize_obs_imu_latency"]:
+                self.obs_imu_latency_simstep[env_ids] = torch.randint(int(self.cfg["task"]["range_obs_imu_latency"][0]/(1000*self.sim_dt)),
+                                                        int(self.cfg["task"]["range_obs_imu_latency"][1]/(1000*self.sim_dt))+1, (len(env_ids),),device=self.device)
+            else:
+                self.obs_imu_latency_simstep[env_ids] = int(self.cfg["task"]["range_obs_imu_latency"][1]/(1000*self.sim_dt))
+    
+    def update_action_latency_buffer(self):
+        if self.cfg["task"]["add_action_latency"]:
+            self.action_latency_buffer[:,:,1:] = self.action_latency_buffer[:,:,:(int(self.cfg["task"]["range_action_latency"][1]/(1000*self.sim_dt)))].clone()
+            self.action_latency_buffer[:,:,0] = self.actions
+            action_delayed = self.action_latency_buffer[torch.arange(self.num_envs), :, self.action_latency_simstep]
+        else:
+            action_delayed = self.actions
+        
+        return action_delayed
+
+    def update_obs_latency_buffer(self):
+        self.gym.refresh_actor_root_state_tensor(self.sim)
+        self.obs_motor_latency_buffer[:,:,1:] = self.obs_motor_latency_buffer[:,:,:int(self.cfg["task"]["range_obs_motor_latency"][1]/(1000*self.sim_dt))].clone()
+        self.obs_motor_latency_buffer[:,:,0] = torch.cat((self._dof_pos, self._dof_vel), 1).clone()
+        self.obs_imu_latency_buffer[:,:,1:] = self.obs_imu_latency_buffer[:,:,:int(self.cfg["task"]["range_obs_imu_latency"][1]/(1000*self.sim_dt))].clone()
+        self.obs_imu_latency_buffer[:,:,0] = torch.cat((self.projected_gravity, self._rigid_body_ang_vel[:, 0, :]), 1).clone()
+
+
+@torch.jit.script
+def compute_duckling_observations(
+    root_pos,
+    root_rot,
+    root_vel,
+    root_ang_vel,
+    dof_pos,
+    dof_vel,
+    key_body_pos,
+    local_root_obs,
+    root_height_obs,
+    dof_obs_size,
+    dof_offsets,
+    dof_axis,
+    projected_gravity,
+    foot_contacts,
+):
+    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, int, List[int], List[int], Tensor, Tensor) -> Tensor
+    # realistic observations
+
+    heading_rot = torch_utils.calc_heading_quat_inv(root_rot)
+    # local_root_vel = quat_rotate(heading_rot, root_vel)
+    local_root_ang_vel = quat_rotate(heading_rot, root_ang_vel)
+    
+    obs = torch.cat(
+        (
+            projected_gravity,
+            dof_pos,
+            dof_vel,
+            foot_contacts,
+            # local_root_vel,
+            local_root_ang_vel,
+            # local_root_obs,
+            # root_height_obs,
+        ),
+        dim=-1,
+    )
+    return obs
 
 class Terrain:
     def __init__(self, cfg, num_robots) -> None:
