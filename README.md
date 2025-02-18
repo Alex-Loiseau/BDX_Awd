@@ -11,6 +11,14 @@ follow the installation instructions.
 Once Isaac Gym is installed, install the external dependencies for this repo:
 
 ```
+conda create --name duck_awd --no-default-packages python=3.8
+conda activate duck_awd
+
+wget https://developer.nvidia.com/isaac-gym-preview-4 -O isaacgym.tar.gz
+tar xf isaacgym.tar.gz
+rm -f isaacgym.tar.gz
+pip install -e isaacgym/python
+
 pip install -r requirements.txt
 ```
 
@@ -67,6 +75,10 @@ python awd/run.py --test --task DucklingViewMotion --num_envs 2 --cfg_env awd/da
 
 
 ### Gait Generation
+
+```
+python auto_waddle.py --bdx go_bdx -j
+```
 
 #### Gait Playground
 

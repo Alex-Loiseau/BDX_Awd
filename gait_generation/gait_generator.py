@@ -58,8 +58,9 @@ parser.add_argument("--walk_max_dx_forward", type=float, default=None)
 parser.add_argument("--walk_max_dx_backward", type=float, default=None)
 parser.add_argument("-l", "--length", type=int, default=10)
 parser.add_argument("-m", "--meshcat_viz", action="store_true", default=False)
-parser.add_argument("--mini", action="store_true", default=False)
-parser.add_argument("--mini2", action="store_true", default=False)
+parser.add_argument("--bdx",
+                    help="Duck type go_bdx, mini_bdx, mini2_bdx, etc",
+                    required=True)
 parser.add_argument("--debug", action="store_true", default=False)
 parser.add_argument("--preset", type=str, default="")
 parser.add_argument(
@@ -110,18 +111,9 @@ if args.debug:
     episode["Debug_info"] = []
 
 script_path = os.path.dirname(os.path.abspath(__file__))
-if args.mini:
-    robot = "mini_bdx"
-    robot_urdf = "urdf/bdx.urdf"
-    asset_path = os.path.join(script_path, "../awd/data/assets/mini_bdx")
-elif args.mini2:
-    robot = "mini2_bdx"
-    robot_urdf = "mini2_bdx.urdf"
-    asset_path = os.path.join(script_path, "../awd/data/assets/mini2_bdx")
-else:
-    robot = "go_bdx"
-    robot_urdf = "go_bdx.urdf"
-    asset_path = os.path.join(script_path, "../awd/data/assets/go_bdx")
+robot = args.bdx
+robot_urdf = f"{args.bdx}.urdf"
+asset_path = os.path.join(script_path, f"../awd/data/assets/{args.bdx}")
 
 preset_filename = args.preset
 filename = os.path.join(asset_path, "placo_defaults.json")
@@ -130,11 +122,10 @@ if preset_filename:
         filename = preset_filename
     else:
         print(f"No such file: {preset_filename}")
-with open(filename, "r") as f:
+with open(filename, 'r') as f:
     gait_parameters = json.load(f)
     print(f"gait_parameters {gait_parameters}")
-
-
+    
 args.dx = gait_parameters["dx"]
 args.dy = gait_parameters["dy"]
 args.dtheta = gait_parameters["dtheta"]
@@ -168,8 +159,8 @@ avg_y_lin_vel = []
 avg_yaw_vel = []
 added_frame_info = False
 # center_y_pos = None
-center_y_pos = -(pwe.parameters.feet_spacing / 2)
-print(f"center_y_pos: {center_y_pos}")
+# center_y_pos = -(pwe.parameters.feet_spacing / 2)
+# print(f"center_y_pos: {center_y_pos}")
 
 
 def compute_angular_velocity(quat, prev_quat, dt):
@@ -178,16 +169,16 @@ def compute_angular_velocity(quat, prev_quat, dt):
         prev_quat = quat
     r1 = R.from_quat(quat)  # Current quaternion
     r0 = R.from_quat(prev_quat)  # Previous quaternion
-
+    
     # Compute relative rotation: r_rel = r0^(-1) * r1
     r_rel = r0.inv() * r1
-
+    
     # Convert relative rotation to axis-angle
     axis, angle = r_rel.as_rotvec(), np.linalg.norm(r_rel.as_rotvec())
-
+    
     # Angular velocity (in radians per second)
     angular_velocity = axis * (angle / dt)
-
+    
     return list(angular_velocity)
 
 # # convert to linear and angular velocity
@@ -201,6 +192,7 @@ while True:
         start = pwe.t
         last_record = pwe.t + 1 / FPS
         last_meshcat_display = pwe.t + 1 / MESHCAT_FPS
+        continue
 
     # print(np.around(pwe.robot.get_T_world_fbase()[:3, 3], 3))
 
@@ -459,7 +451,7 @@ print(f"computed yvel: {y_vel}, mean yvel: {mean_avg_y_lin_vel}")
 print(f"computed thetavel: {theta_vel}, mean thetavel: {mean_yaw_vel}")
 
 # TODO convert name to velocities
-name = f"{x_vel}_{y_vel}_{theta_vel}"
+name = f"{args.name}_{x_vel}_{y_vel}_{theta_vel}"
 # name = f"{args.dx}_{args.dy}_{args.dtheta}"
 file_name = name + str(".json")
 file_path = os.path.join(args.output_dir, file_name)
