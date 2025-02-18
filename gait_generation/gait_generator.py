@@ -11,18 +11,23 @@ from scipy.spatial.transform import Rotation as R
 
 from gait.placo_walk_engine import PlacoWalkEngine
 
+
 def open_browser():
     try:
-        webbrowser.open_new('http://127.0.0.1:7000/static/')
+        webbrowser.open_new("http://127.0.0.1:7000/static/")
     except:
         print("Failed to open the default browser. Trying Google Chrome.")
         try:
-            webbrowser.get('google-chrome').open_new('http://127.0.0.1:7000/static/')
+            webbrowser.get("google-chrome").open_new("http://127.0.0.1:7000/static/")
         except:
-            print("Failed to open Google Chrome. Make sure it's installed and accessible.")
+            print(
+                "Failed to open Google Chrome. Make sure it's installed and accessible."
+            )
+
 
 class RoundingFloat(float):
-    __repr__ = staticmethod(lambda x: format(x, '.5f'))
+    __repr__ = staticmethod(lambda x: format(x, ".5f"))
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", type=str, required=True)
@@ -73,7 +78,7 @@ parser.add_argument(
 args = parser.parse_args()
 args.hardware = True
 
-FPS = 30
+FPS = 50
 MESHCAT_FPS = 20
 DISPLAY_MESHCAT = args.meshcat_viz
 
@@ -106,15 +111,15 @@ if args.debug:
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 if args.mini:
-    robot = 'mini_bdx'
+    robot = "mini_bdx"
     robot_urdf = "urdf/bdx.urdf"
     asset_path = os.path.join(script_path, "../awd/data/assets/mini_bdx")
 elif args.mini2:
-    robot = 'mini2_bdx'
+    robot = "mini2_bdx"
     robot_urdf = "mini2_bdx.urdf"
     asset_path = os.path.join(script_path, "../awd/data/assets/mini2_bdx")
 else:
-    robot = 'go_bdx'
+    robot = "go_bdx"
     robot_urdf = "go_bdx.urdf"
     asset_path = os.path.join(script_path, "../awd/data/assets/go_bdx")
 
@@ -125,10 +130,11 @@ if preset_filename:
         filename = preset_filename
     else:
         print(f"No such file: {preset_filename}")
-with open(filename, 'r') as f:
+with open(filename, "r") as f:
     gait_parameters = json.load(f)
     print(f"gait_parameters {gait_parameters}")
-    
+
+
 args.dx = gait_parameters["dx"]
 args.dy = gait_parameters["dy"]
 args.dtheta = gait_parameters["dtheta"]
@@ -161,9 +167,10 @@ avg_x_lin_vel = []
 avg_y_lin_vel = []
 avg_yaw_vel = []
 added_frame_info = False
-#center_y_pos = None
-center_y_pos = -(pwe.parameters.feet_spacing/2)
+# center_y_pos = None
+center_y_pos = -(pwe.parameters.feet_spacing / 2)
 print(f"center_y_pos: {center_y_pos}")
+
 
 def compute_angular_velocity(quat, prev_quat, dt):
     # Convert quaternions to scipy Rotation objects
@@ -171,17 +178,22 @@ def compute_angular_velocity(quat, prev_quat, dt):
         prev_quat = quat
     r1 = R.from_quat(quat)  # Current quaternion
     r0 = R.from_quat(prev_quat)  # Previous quaternion
-    
+
     # Compute relative rotation: r_rel = r0^(-1) * r1
     r_rel = r0.inv() * r1
-    
+
     # Convert relative rotation to axis-angle
     axis, angle = r_rel.as_rotvec(), np.linalg.norm(r_rel.as_rotvec())
-    
+
     # Angular velocity (in radians per second)
     angular_velocity = axis * (angle / dt)
-    
+
     return list(angular_velocity)
+
+# # convert to linear and angular velocity
+def steps_to_vel(step_size, period):
+    return (step_size * 2) / period
+
 
 while True:
     pwe.tick(DT)
@@ -189,7 +201,6 @@ while True:
         start = pwe.t
         last_record = pwe.t + 1 / FPS
         last_meshcat_display = pwe.t + 1 / MESHCAT_FPS
-        continue
 
     # print(np.around(pwe.robot.get_T_world_fbase()[:3, 3], 3))
 
@@ -199,10 +210,10 @@ while True:
         else:
             T_world_fbase = pwe.robot.get_T_world_fbase()
         root_position = list(T_world_fbase[:3, 3])
-        #if center_y_pos is None:
+        # if center_y_pos is None:
         #    center_y_pos = root_position[1]
-        root_position[1] = root_position[1] - center_y_pos
-        if round(root_position[2],5) < 0:
+        # root_position[1] = root_position[1] - center_y_pos
+        if round(root_position[2], 5) < 0:
             print(f"BAD root_position: {root_position[2]:.5f}")
         root_orientation_quat = list(R.from_matrix(T_world_fbase[:3, :3]).as_quat())
         joints_positions = list(pwe.get_angles().values())
@@ -216,8 +227,19 @@ while True:
             T_world_leftFoot = pwe.robot.get_T_world_left()
             T_world_rightFoot = pwe.robot.get_T_world_right()
 
-        T_body_leftFoot = T_world_leftFoot #np.linalg.inv(T_world_fbase) @ T_world_leftFoot
-        T_body_rightFoot = T_world_rightFoot  #np.linalg.inv(T_world_fbase) @ T_world_rightFoot
+        # T_body_leftFoot = (
+        #     T_world_leftFoot  # np.linalg.inv(T_world_fbase) @ T_world_leftFoot
+        # )
+        # T_body_rightFoot = (
+        #     T_world_rightFoot  # np.linalg.inv(T_world_fbase) @ T_world_rightFoot
+        # )
+
+        T_body_leftFoot = (
+            np.linalg.inv(T_world_fbase) @ T_world_leftFoot
+        )
+        T_body_rightFoot = (
+            np.linalg.inv(T_world_fbase) @ T_world_rightFoot
+        )
 
         left_toe_pos = list(T_body_leftFoot[:3, 3])
         right_toe_pos = list(T_body_rightFoot[:3, 3])
@@ -242,7 +264,9 @@ while True:
         # print("world linear vel", world_linear_vel)
         # print("body linear vel", body_linear_vel)
 
-        world_angular_vel = compute_angular_velocity(root_orientation_quat, prev_root_orientation_quat, (1 / FPS))
+        world_angular_vel = compute_angular_velocity(
+            root_orientation_quat, prev_root_orientation_quat, (1 / FPS)
+        )
 
         # world_angular_vel = list(
         #     (
@@ -374,7 +398,7 @@ while True:
         robot_frame_viz(pwe.robot, "left_foot")
         robot_frame_viz(pwe.robot, "right_foot")
 
-    #if pwe.t - start > args.length:
+    # if pwe.t - start > args.length:
     #    break
     if len(episode["Frames"]) == args.length * FPS:
         break
@@ -393,7 +417,7 @@ print(f"avg yaw {mean_yaw_vel}")
 episode["Vel_x"] = mean_avg_x_lin_vel
 episode["Vel_y"] = mean_avg_y_lin_vel
 episode["Yaw"] = mean_yaw_vel
-episode["Placo"] =  {
+episode["Placo"] = {
     "dx": args.dx,
     "dy": args.dy,
     "dtheta": args.dtheta,
@@ -422,9 +446,22 @@ episode["Placo"] =  {
     "avg_y_lin_vel": mean_avg_y_lin_vel,
     "avg_yaw_vel": mean_yaw_vel,
     "preset_name": args.preset.split("/")[-1].split(".")[0],
+    "period": pwe.period,
 }
 
-file_name = args.name + str(".json")
+
+x_vel = np.around(steps_to_vel(args.dx, pwe.period), 3)
+y_vel = np.around(steps_to_vel(args.dy, pwe.period), 3)
+theta_vel = np.around(steps_to_vel(args.dtheta, pwe.period), 3)
+
+print(f"computed xvel: {x_vel}, mean xvel: {mean_avg_x_lin_vel}")
+print(f"computed yvel: {y_vel}, mean yvel: {mean_avg_y_lin_vel}")
+print(f"computed thetavel: {theta_vel}, mean thetavel: {mean_yaw_vel}")
+
+# TODO convert name to velocities
+name = f"{x_vel}_{y_vel}_{theta_vel}"
+# name = f"{args.dx}_{args.dy}_{args.dtheta}"
+file_name = name + str(".json")
 file_path = os.path.join(args.output_dir, file_name)
 os.makedirs(args.output_dir, exist_ok=True)
 print("DONE, saving", file_name)
