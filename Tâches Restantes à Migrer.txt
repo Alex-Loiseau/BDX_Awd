@@ -1,0 +1,24 @@
+Tâches Restantes à Migrer
+⏳ DucklingAMP - Apprentissage avec Adversarial Motion Priors
+⏳ DucklingAMPTask - Tâche de base AMP
+⏳ DucklingHeading - Suivi de direction
+⏳ DucklingPerturb - Robustesse aux perturbations
+⏳ DucklingViewMotion - Visualisation de motions
+⏳ Motion library (motion_lib.py)
+🚨 Points Importants
+Quaternions : Format changé de (x,y,z,w) → (w,x,y,z) ⚠️ (déjà géré dans le code)
+Plus de wrapping : Les tenseurs sont directement accessibles via .data
+Plus de refresh : Mis à jour automatiquement après sim.step()
+Configuration en Python : Plus de YAML, tout est en Python avec @configclass
+📚 Documentation à Lire
+QUICKSTART.md ← Commencez ici !
+INSTALL.md pour l'installation détaillée
+MIGRATION_GUIDE.md pour comprendre les différences API
+🎉 Résultat
+Vous avez maintenant :
+✅ Une structure complète IsaacLab fonctionnelle
+✅ Un environnement DucklingCommand migré et prêt à l'emploi
+✅ Des scripts d'installation et de conversion
+✅ Une documentation complète en français
+✅ Un template pour migrer les autres tâches
+La migration de base est complète et prête à être testée ! 🚀 Voulez-vous que je vous aide avec l'installation ou avez-vous des questions sur la migration ?

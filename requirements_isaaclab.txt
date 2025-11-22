@@ -1,0 +1,27 @@
+# IsaacLab Migration Requirements
+# Python 3.10+ required
+
+# Core dependencies
+torch>=2.0.0
+numpy>=1.21.1
+pyyaml>=5.3.1
+scipy>=1.5.0
+
+# RL Training
+rl-games==1.6.1  # Updated version compatible with modern PyTorch
+
+# Visualization & Logging
+tensorboard>=2.2.1
+matplotlib
+opencv-python
+
+# Utilities
+termcolor==1.1.0
+tqdm
+
+# Optional: For gait generation (requires Eigen3 system package first)
+# sudo apt-get install libeigen3-dev
+# placo==0.6.2
+
+# IsaacLab will be installed separately
+# Follow instructions in INSTALL.md
