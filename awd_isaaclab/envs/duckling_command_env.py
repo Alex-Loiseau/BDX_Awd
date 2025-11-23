@@ -102,18 +102,18 @@ class DucklingCommandEnv(DucklingBaseEnv):
         task_obs_size = 3 if cfg.enable_task_obs else 0
         cfg.num_observations = base_obs_size + task_obs_size
 
-        # Define observation and action spaces before parent init
-        # These will be validated before the environment is created
-        if cfg.num_observations > 0:
-            cfg.observation_space = gym.spaces.Box(
-                low=-float('inf'), high=float('inf'),
-                shape=(cfg.num_observations,), dtype=np.float32
+        # Define observation_space and action_space for DirectRLEnvCfg.validate()
+        # Create proper Gymnasium Box spaces wrapped in a Dict
+        # IsaacLab's DirectRLEnv returns observations as {"policy": obs}
+        import numpy as np
+        cfg.observation_space = gym.spaces.Dict({
+            "policy": gym.spaces.Box(
+                low=-np.inf, high=np.inf, shape=(cfg.num_observations,), dtype=np.float32
             )
-        if cfg.num_actions > 0:
-            cfg.action_space = gym.spaces.Box(
-                low=-1.0, high=1.0,
-                shape=(cfg.num_actions,), dtype=np.float32
-            )
+        })
+        cfg.action_space = gym.spaces.Box(
+            low=-1.0, high=1.0, shape=(cfg.num_actions,), dtype=np.float32
+        )
 
         # Store reward scales (will multiply by dt after parent init)
         self._raw_reward_scales = {
@@ -187,11 +187,10 @@ class DucklingCommandEnv(DucklingBaseEnv):
 
         # Note: Lights are created automatically by Isaac Sim when viewing in GUI
 
-    def _pre_physics_step(self, actions: torch.Tensor) -> None:
-        """Process actions and update commands.
+    def _apply_action(self) -> None:
+        """Apply actions to robot.
 
-        Args:
-            actions: Actions from policy.
+        Extends parent method to add command updates and pushes.
         """
         # Update commands from keyboard if enabled
         if self.cfg.keyboard_input:
@@ -200,8 +199,8 @@ class DucklingCommandEnv(DucklingBaseEnv):
         # Apply pushes if enabled
         self._apply_random_pushes()
 
-        # Call parent to apply actions
-        super()._pre_physics_step(actions)
+        # Call parent to apply actions to robot
+        super()._apply_action()
 
     def _get_observations(self) -> Dict[str, torch.Tensor]:
         """Compute observations.

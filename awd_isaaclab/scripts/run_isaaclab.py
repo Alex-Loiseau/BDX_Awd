@@ -25,7 +25,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.insert(0, project_root)
 
 import torch
-import gymnasium as gym
+import gymnasium
 
 # Import IsaacLab (version 0.48.4+ uses 'isaaclab' namespace directly)
 # Note: Older versions used 'omni.isaac.lab', newer versions use 'isaaclab'
@@ -288,6 +288,10 @@ def train(env, args):
         args: Command line arguments.
     """
     global _global_env
+
+    # Suppress Gym deprecation warning from rl-games (rl-games hasn't migrated to Gymnasium yet)
+    import warnings
+    warnings.filterwarnings("ignore", message=".*Gym has been unmaintained.*")
 
     try:
         from rl_games.common import env_configurations, vecenv
@@ -574,6 +578,9 @@ def main():
     # Create environment configuration
     env_cfg = create_env_config(args)
 
+    # Note: num_observations for each task is set in the environment __init__()
+    # We don't override it here to let each environment manage its own observation size
+
     # Register environment with correct entry point
     task_name = f"{args.task}_{args.robot}"
 
@@ -594,7 +601,7 @@ def main():
         raise ValueError(f"Unknown task: {args.task}")
 
     print(f"[DEBUG] Registering environment {task_name} with entry_point {entry_point}")
-    gym.register(
+    gymnasium.register(
         id=task_name,
         entry_point=entry_point,
         kwargs={"cfg": env_cfg},
@@ -603,7 +610,7 @@ def main():
 
     # Create environment
     print("[DEBUG] Creating environment...")
-    env = gym.make(task_name, cfg=env_cfg, render_mode="rgb_array" if args.headless else "human")
+    env = gymnasium.make(task_name, cfg=env_cfg, render_mode="rgb_array" if args.headless else "human")
     print("[DEBUG] Environment created successfully!")
 
     # Do an initial reset to fully initialize the simulation

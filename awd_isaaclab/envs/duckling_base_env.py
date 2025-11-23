@@ -169,17 +169,17 @@ class DucklingBaseEnv(DirectRLEnv):
     # Note: _setup_scene() is NOT defined here - it must be implemented by subclasses
     # This allows DirectRLEnv to call the subclass implementation directly
 
-    def _pre_physics_step(self, actions: torch.Tensor) -> None:
-        """Process actions before physics step.
+    def _apply_action(self) -> None:
+        """Apply actions to the robot.
 
-        Args:
-            actions: Actions from the policy.
+        This is the DirectRLEnv API method called by the environment.
+        It processes and applies actions to the robot actuators.
         """
         # Store previous actions
         self.prev_actions[:] = self.actions
 
         # Clip and scale actions
-        self.actions = torch.clamp(actions, -1.0, 1.0)
+        self.actions = torch.clamp(self.actions, -1.0, 1.0)
         scaled_actions = self.actions * self.cfg.action_scale
 
         # Apply torque randomization if enabled
@@ -193,6 +193,18 @@ class DucklingBaseEnv(DirectRLEnv):
         else:
             # Use Isaac's built-in actuators
             self._robot.set_joint_effort_target(scaled_actions)
+
+    def _pre_physics_step(self, actions: torch.Tensor) -> None:
+        """Process actions before physics step (legacy method).
+
+        This method is kept for compatibility but now just stores actions.
+        The actual application is done in _apply_action().
+
+        Args:
+            actions: Actions from the policy.
+        """
+        # Just store the actions - they'll be applied in _apply_action()
+        pass
 
     def _apply_custom_pd_control(self, actions: torch.Tensor) -> None:
         """Apply custom PD control.

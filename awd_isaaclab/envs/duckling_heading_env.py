@@ -79,6 +79,19 @@ class DucklingHeadingEnv(DucklingCommandEnv):
         task_obs_size = 5 if cfg.enable_task_obs else 0
         cfg.num_observations = base_obs_size + task_obs_size
 
+        # Define observation_space and action_space for DirectRLEnvCfg.validate()
+        # Create proper Gymnasium Box spaces wrapped in a Dict
+        # IsaacLab's DirectRLEnv returns observations as {"policy": obs}
+        import gymnasium as gym
+        cfg.observation_space = gym.spaces.Dict({
+            "policy": gym.spaces.Box(
+                low=-np.inf, high=np.inf, shape=(cfg.num_observations,), dtype=np.float32
+            )
+        })
+        cfg.action_space = gym.spaces.Box(
+            low=-1.0, high=1.0, shape=(cfg.num_actions,), dtype=np.float32
+        )
+
         # Initialize parent
         super().__init__(cfg, render_mode, **kwargs)
 
@@ -102,17 +115,16 @@ class DucklingHeadingEnv(DucklingCommandEnv):
         )
         self._tar_facing_dir[:, 0] = 1.0  # Default: face forward
 
-    def _pre_physics_step(self, actions: torch.Tensor) -> None:
-        """Process actions before physics step.
+    def _apply_action(self) -> None:
+        """Apply actions to robot.
 
-        Args:
-            actions: Actions from the policy.
+        Extends parent method to store previous position.
         """
         # Store previous position for velocity calculation
         self._prev_root_pos[:] = self._robot.data.root_state_w[:, :3]
 
         # Call parent
-        super()._pre_physics_step(actions)
+        super()._apply_action()
 
     def _get_observations(self) -> dict:
         """Compute observations.
